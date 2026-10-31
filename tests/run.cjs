@@ -1,0 +1,12 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+const root = path.join(__dirname, '..');
+const context = vm.createContext({console});
+const file = path.join(root,'data.js');
+if (fs.existsSync(file)) vm.runInContext(fs.readFileSync(file,'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'data.test.js'),'utf8'),context);
+const results = context.runDataTests();
+for (const r of results) console.log(`${r.ok?'PASS':'FAIL'} ${r.name}${r.error?': '+r.error:''}`);
+console.log(`${results.filter(r=>r.ok).length}/${results.length} bestanden`);
+process.exitCode=results.some(r=>!r.ok)?1:0;

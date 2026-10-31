@@ -1,0 +1,10 @@
+<!doctype html><html lang="de"><meta charset="utf-8"><title>TBW-Würfel · Tests</title>
+<style>body{font:16px/1.6 system-ui;margin:24px;max-width:1050px}li{padding:3px}.fail{color:#b21d32}.pass{color:#197644}iframe{width:100%;height:600px;border:1px solid #bbb}button{font:inherit;padding:10px}</style>
+<h1>TBW-Würfel · Verhaltenstests</h1><p>Die Oberfläche läuft in einem echten Browser. Temporäre Testdaten werden auf einer separaten lokalen Vorschau-Adresse gespeichert. Vorhandene Daten werden anschließend wiederhergestellt.</p>
+<button id="run">Tests starten</button><h2 id="summary">Bereit</h2><ul id="results"></ul><iframe id="app" title="Anwendung unter Test" src="about:blank"></iframe>
+<script src="../data.js"></script><script src="data.test.js"></script><script src="ui.test.js"></script>
+<script>
+const run=document.getElementById('run'),frame=document.getElementById('app'),output=document.getElementById('results'),summary=document.getElementById('summary');
+function render(results){output.replaceChildren();for(const r of results){const li=document.createElement('li');li.className=r.ok?'pass':'fail';li.textContent=(r.ok?'PASS: ':'FAIL: ')+r.name+(r.error?' – '+r.error:'');output.append(li);}summary.textContent=`${results.filter(r=>r.ok).length} / ${results.length} bestanden`;}
+run.onclick=async()=>{run.disabled=true;const saved=localStorage.getItem('tbw-wuerfel-v1'),old=localStorage.getItem('aufgaben-wuerfel-erledigt');const data=runDataTests();render(data);try{localStorage.removeItem('tbw-wuerfel-v1');localStorage.removeItem('aufgaben-wuerfel-erledigt');await new Promise(r=>{frame.onload=r;frame.src='../index.html';});await runUITests(frame,r=>render([...data,...r]));}catch(e){render([...data,{ok:false,name:'Testlauf',error:e.message}]);}finally{if(saved===null)localStorage.removeItem('tbw-wuerfel-v1');else localStorage.setItem('tbw-wuerfel-v1',saved);if(old===null)localStorage.removeItem('aufgaben-wuerfel-erledigt');else localStorage.setItem('aufgaben-wuerfel-erledigt',old);run.disabled=false;}};
+</script></html>

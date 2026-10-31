@@ -1,0 +1,98 @@
+[
+  {
+    "name": "Migration erhält alle 70 Aufgaben und den alten Fortschritt",
+    "ok": true
+  },
+  {
+    "name": "Migration ignoriert unpassende Altdaten",
+    "ok": true
+  },
+  {
+    "name": "Ohne ausgewählte Themen ist der Würfeltopf leer",
+    "ok": true
+  },
+  {
+    "name": "Mehrfachauswahl begrenzt den Würfeltopf auf zwei Themen",
+    "ok": true
+  },
+  {
+    "name": "Erledigte lassen sich pro Modus wieder einschließen",
+    "ok": true
+  },
+  {
+    "name": "Prüfung trägt Fach, Termin und Jahr in der Anzeige",
+    "ok": true
+  },
+  {
+    "name": "Prüfungsfortschritt verändert Aufgaben nicht",
+    "ok": true
+  },
+  {
+    "name": "Umbenennen erhält Aufgaben-ID und Fortschritt",
+    "ok": true
+  },
+  {
+    "name": "Fach umbenennen erhält zugeordnete Prüfungen und Auswahl",
+    "ok": true
+  },
+  {
+    "name": "Neue Aufgaben lassen sich in neue Themen eintragen",
+    "ok": true
+  },
+  {
+    "name": "Belegte Fächer lassen sich nicht löschen",
+    "ok": true
+  },
+  {
+    "name": "Löschen räumt Fortschritt und anschließend leeres Fach auf",
+    "ok": true
+  },
+  {
+    "name": "Doppelte Fächer und Prüfungen werden abgelehnt",
+    "ok": true
+  },
+  {
+    "name": "Export und Import stellen Inhalt, Auswahl und Fortschritt wieder her",
+    "ok": true
+  },
+  {
+    "name": "Unbekannte Version oder fremdes Format wird abgelehnt",
+    "ok": true
+  },
+  {
+    "name": "Doppelte IDs und fremde Referenzen im Import werden abgelehnt",
+    "ok": true
+  },
+  {
+    "name": "Fehlende, leere und falsch typisierte Pflichtfelder werden abgelehnt",
+    "ok": true
+  },
+  {
+    "name": "Fehlgeschlagene Änderungen verändern die ursprünglichen Daten nicht",
+    "ok": true
+  },
+  {
+    "name": "Freier Text wird unverändert gespeichert, ohne als Code ausgewertet zu werden",
+    "ok": true
+  },
+  {
+    "name": "Auswahl vermeidet direkte Wiederholung und behandelt leere Mengen",
+    "ok": true
+  },
+  {
+    "name": "Ungültiges JSON wird abgelehnt",
+    "ok": true
+  },
+  {
+    "name": "Jeder akzeptierte größere Datenbestand bleibt exportierbar und importierbar",
+    "ok": true
+  },
+  {
+    "name": "Kompakter Import darf die Größenbegrenzung der exportierten Sicherung nicht umgehen",
+    "ok": true
+  },
+  {
+    "name": "Größenbegrenzung berücksichtigt UTF-8-Bytes bei Umlauten",
+    "ok": true
+  }
+]

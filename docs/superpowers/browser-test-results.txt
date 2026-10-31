@@ -1,0 +1,42 @@
+40 / 40 bestanden
+
+PASS: Migration erhält alle 70 Aufgaben und den alten Fortschritt
+PASS: Migration ignoriert unpassende Altdaten
+PASS: Ohne ausgewählte Themen ist der Würfeltopf leer
+PASS: Mehrfachauswahl begrenzt den Würfeltopf auf zwei Themen
+PASS: Erledigte lassen sich pro Modus wieder einschließen
+PASS: Prüfung trägt Fach, Termin und Jahr in der Anzeige
+PASS: Prüfungsfortschritt verändert Aufgaben nicht
+PASS: Umbenennen erhält Aufgaben-ID und Fortschritt
+PASS: Fach umbenennen erhält zugeordnete Prüfungen und Auswahl
+PASS: Neue Aufgaben lassen sich in neue Themen eintragen
+PASS: Belegte Fächer lassen sich nicht löschen
+PASS: Löschen räumt Fortschritt und anschließend leeres Fach auf
+PASS: Doppelte Fächer und Prüfungen werden abgelehnt
+PASS: Export und Import stellen Inhalt, Auswahl und Fortschritt wieder her
+PASS: Unbekannte Version oder fremdes Format wird abgelehnt
+PASS: Doppelte IDs und fremde Referenzen im Import werden abgelehnt
+PASS: Fehlende, leere und falsch typisierte Pflichtfelder werden abgelehnt
+PASS: Fehlgeschlagene Änderungen verändern die ursprünglichen Daten nicht
+PASS: Freier Text wird unverändert gespeichert, ohne als Code ausgewertet zu werden
+PASS: Auswahl vermeidet direkte Wiederholung und behandelt leere Mengen
+PASS: Ungültiges JSON wird abgelehnt
+PASS: Jeder akzeptierte größere Datenbestand bleibt exportierbar und importierbar
+PASS: Kompakter Import darf die Größenbegrenzung der exportierten Sicherung nicht umgehen
+PASS: Größenbegrenzung berücksichtigt UTF-8-Bytes bei Umlauten
+PASS: Bestehende Aufgaben werden angezeigt
+PASS: Ohne Themenauswahl kann nicht gewürfelt werden
+PASS: Aufgabe hinzufügen, erledigen und umbenennen erhält Fortschritt
+PASS: Prüfungsfach und Prüfung lassen sich unabhängig anlegen
+PASS: Würfeln liefert eine Prüfung und getrennten Fortschritt
+PASS: Freier Text wird sicher angezeigt
+PASS: Neuladen erhält Änderungen und getrennten Fortschritt
+PASS: Ungültiger Import lässt Daten und Fortschritt unverändert
+PASS: Import erfordert Bestätigung und kann abgebrochen werden
+PASS: Bestätigter Import stellt sämtliche Inhalte und Fortschritt wieder her
+PASS: Wechsel der Auswahl während des Würfelns bricht den alten Wurf ab
+PASS: Löschen erfordert Bestätigung und entfernt nur den gewählten Eintrag
+PASS: Speicherfehler werden sichtbar statt still verschluckt
+PASS: Unbekannte Importversion lässt den Browserbestand unverändert
+PASS: Alte Erledigt-Markierungen werden beim ersten Browserstart migriert
+PASS: Beschädigter Speicher bleibt geschützt und kann per Import wiederhergestellt werden

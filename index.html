@@ -3,268 +3,58 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aufgaben-Würfel</title>
-<style>
-  :root {
-    --bg: #f4f1ea; --card: #ffffff; --text: #1d1d1f; --muted: #6b6b70;
-    --accent: #2f6fdb; --accent-text: #ffffff; --border: #e2ddd2; --done: #2e9d5b;
-    --die: #ffffff; --pip: #1d1d1f;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #16171a; --card: #212226; --text: #ececee; --muted: #9a9aa2;
-      --accent: #5b8ff0; --accent-text: #0e0f12; --border: #33343a; --done: #4cc47f;
-      --die: #f1f1f3; --pip: #16171a; }
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 640px; margin: 0 auto; padding: 32px 16px 64px; }
-  h1 { margin: 0 0 4px; font-size: 1.8rem; }
-  .sub { margin: 0 0 24px; color: var(--muted); }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-  .controls { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; }
-  select { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); color: var(--text); }
-  label { display: inline-flex; gap: 8px; align-items: center; cursor: pointer; }
-
-  .stage { display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; }
-  .die { width: 110px; height: 110px; background: var(--die); border-radius: 22px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.18), inset 0 -6px 0 rgba(0,0,0,.08);
-    display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); padding: 16px; }
-  .pip { width: 18px; height: 18px; border-radius: 50%; background: var(--pip); place-self: center; visibility: hidden; }
-  .pip.on { visibility: visible; }
-  .die.rolling { animation: roll .6s ease-in-out infinite; }
-  @keyframes roll { 0%{transform:rotate(0) scale(1)} 25%{transform:rotate(90deg) scale(.9)} 50%{transform:rotate(180deg) scale(1.05)} 75%{transform:rotate(270deg) scale(.9)} 100%{transform:rotate(360deg) scale(1)} }
-
-  .btn { font: inherit; font-weight: 600; border: 0; border-radius: 999px; cursor: pointer; padding: 10px 18px;
-    background: transparent; color: var(--accent); border: 1px solid var(--border); }
-  .btn.primary { background: var(--accent); color: var(--accent-text); border: 0; font-size: 1.2rem; padding: 14px 36px; }
-  .btn:disabled { opacity: .5; cursor: default; }
-  .result { min-height: 4.5em; }
-  .result .thema { color: var(--muted); font-size: .9rem; text-transform: uppercase; letter-spacing: .05em; }
-  .result .titel { font-size: 1.35rem; font-weight: 700; }
-  .result.shuffling .titel { opacity: .5; }
-  .hint { color: var(--muted); font-size: .9rem; }
-
-  h2 { font-size: 1.1rem; margin: 0 0 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  ul { list-style: none; margin: 0; padding: 0; }
-  li { padding: 8px 0; border-top: 1px solid var(--border); }
-  li:first-child { border-top: 0; }
-  li.done span { text-decoration: line-through; color: var(--muted); }
-  .tag { color: var(--muted); font-size: .85rem; }
-  .progress { color: var(--done); font-weight: 600; font-size: .95rem; }
-
-  #feuerwerk { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 12; }
-  .overlay { position: fixed; inset: 0; z-index: 11; display: flex; align-items: center; justify-content: center;
-    padding: 16px; background: rgba(0,0,0,.45); }
-  .overlay[hidden] { display: none; }
-  .gratulation { background: var(--card); border-radius: 20px; padding: 28px 24px; max-width: 460px; width: 100%;
-    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.35); animation: pop .4s ease-out; }
-  .gratulation h3 { margin: 0 0 8px; font-size: 1.6rem; }
-  .gratulation .vorspann { margin: 0; color: var(--muted); }
-  .gratulation .aufgabe { margin: 8px 0 4px; font-size: 1.8rem; font-weight: 800; color: var(--accent); }
-  .gratulation .bereich { margin: 0 0 16px; color: var(--muted); font-size: .95rem; }
-  .gratulation .spruch { margin: 0 0 20px; font-style: italic; }
-  @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-</style>
+<meta name="description" content="Dein Lernwürfel für den Technischen Betriebswirt: Aufgaben und Prüfungen verwalten, auswählen und würfeln.">
+<title>TBW · Lernwürfel</title>
+<link rel="stylesheet" href="styles.css">
+<script src="data.js" defer></script>
+<script src="app.js" defer></script>
 </head>
 <body>
 <main>
-  <h1>🎲 Aufgaben-Würfel</h1>
-  <p class="sub">Technischer Betriebswirt – würfeln statt diskutieren.</p>
-
-  <div class="card controls">
-    <label>Thema
-      <select id="thema"></select>
-    </label>
-    <label><input type="checkbox" id="skipDone" checked> Erledigte nicht mehr würfeln</label>
+  <header class="header"><div><p class="eyebrow">TECHNISCHER BETRIEBSWIRT</p><h1>🎲 Dein Lernwürfel</h1><p class="subtitle">Weniger überlegen. Einfach anfangen.</p></div><span class="local-badge">● Lokal gespeichert</span></header>
+  <p id="storageWarning" class="notice error" role="alert" hidden></p>
+  <p id="message" class="notice" role="status" hidden></p>
+  <nav class="mode-switch" aria-label="Würfelmodus"><button id="modeTasks" aria-pressed="true">Übungsaufgaben</button><button id="modeExams" aria-pressed="false">Prüfungen</button></nav>
+  <div class="workspace">
+    <section class="card selection" aria-labelledby="selectionTitle">
+      <div class="section-head"><h2 id="selectionTitle">Deine Themenfelder</h2><span class="count" id="selectionCount"></span></div>
+      <p class="hint">Wähle aus, was in den Würfeltopf kommt.</p>
+      <div class="text-actions"><button id="selectAll" class="text-btn">Alle auswählen</button><button id="selectNone" class="text-btn">Keine</button></div>
+      <div id="groups" class="group-options"></div>
+      <button id="manageGroups" class="btn full">Themen verwalten</button>
+    </section>
+    <section class="card stage" aria-label="Würfel">
+      <span class="eyebrow" id="stageMode">DEINE NÄCHSTE AUFGABE</span>
+      <div class="die" id="die" aria-hidden="true"></div>
+      <div id="result" class="result" role="status" aria-live="polite" aria-atomic="true"><p class="hint" id="resultGroup"></p><h2 id="resultTitle">Bereit für die nächste Runde?</h2><p class="hint" id="resultHint">Dein nächster Lernschritt ist nur einen Wurf entfernt.</p></div>
+      <button class="btn primary roll-btn" id="roll">Jetzt würfeln</button>
+      <button class="btn success" id="markDone" hidden>✓ Als erledigt markieren</button>
+      <label class="skip-label"><input type="checkbox" id="skipDone" checked> Erledigte nicht mehr würfeln</label>
+      <p id="poolCount" class="hint"></p>
+    </section>
   </div>
-
-  <div class="card stage">
-    <div class="die" id="die"></div>
-    <button class="btn primary" id="roll">Würfeln</button>
-    <div class="result" id="result"><div class="hint">Drück auf „Würfeln“.</div></div>
-    <button class="btn" id="markDone" hidden>✓ Als erledigt markieren</button>
-  </div>
-
-  <div class="card">
-    <h2>Alle Aufgaben <span class="progress" id="progress"></span></h2>
-    <ul id="list"></ul>
-    <p style="margin:16px 0 0"><button class="btn" id="reset">Erledigt-Status zurücksetzen</button></p>
-  </div>
+  <section class="card library" aria-labelledby="listTitle">
+    <div class="section-head library-head"><div><h2 id="listTitle">Deine Aufgaben</h2><p id="listHint" class="hint">Einträge aus deinen ausgewählten Themenfeldern.</p></div><div class="actions"><button id="manageToggle" class="btn" aria-pressed="false">Liste bearbeiten</button><button id="addEntry" class="btn primary">+ Aufgabe hinzufügen</button></div></div>
+    <div class="progress-line"><span id="progress"></span><span id="totalCount" class="hint"></span></div><progress id="progressBar" value="0" max="70" aria-label="Fortschritt der angezeigten Einträge"></progress>
+    <ul id="list" class="entry-list"></ul>
+    <button id="reset" class="text-btn reset-btn">Fortschritt dieses Modus zurücksetzen</button>
+  </section>
+  <section class="backup card" aria-labelledby="backupTitle"><div><h2 id="backupTitle">Dein Lernstand. Zum Mitnehmen.</h2><p class="hint">Aufgaben, Prüfungen und Fortschritt als Datei sichern oder auf ein anderes Gerät übertragen.</p></div><div class="actions"><button id="export" class="btn">↓ Exportieren</button><button id="import" class="btn">↑ Importieren</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></section>
+  <footer>Alles bleibt in diesem Browser. Exportiere regelmäßig eine Sicherung.<br>Kein Konto · Kein Server · Dein Lerntempo</footer>
 </main>
-
-<canvas id="feuerwerk"></canvas>
-<div class="overlay" id="overlay" hidden>
-  <div class="gratulation">
-    <h3>🎉 Gratulation!</h3>
-    <p class="vorspann">Du rechnest jetzt folgendes Thema:</p>
-    <p class="aufgabe" id="gAufgabe"></p>
-    <p class="bereich" id="gBereich"></p>
-    <p class="spruch" id="gSpruch"></p>
-    <button class="btn primary" id="gOk">Los geht's!</button>
-  </div>
-</div>
-
-<script>
-// ===== HIER DIE AUFGABEN EINTRAGEN =====
-// reihe("DBR", 10) ergibt DBR-1 bis DBR-10.
-// Kommen Aufgaben dazu, einfach die Zahl erhöhen.
-
-const reihe = (kuerzel, anzahl) => Array.from({ length: anzahl }, (_, i) => `${kuerzel}-${i + 1}`);
-
-const BEREICHE = {
-  "Deckungsbeitragsrechnung":        reihe("DBR", 10),
-  "Plankostenrechnung":              reihe("PKR", 10),
-  "Gemeinkostenzuschlagsrechnung":   reihe("GKZ", 6),
-  "Maschinenstundensatzrechnung":    reihe("MSZ", 10),
-  "Bilanzansatz":                    reihe("BilAn", 3),
-  "Lagerbestandsrechnung":           reihe("MBLBR", 7),
-  "Bedarfsrechnung":                 reihe("BR", 3),
-  "Kapazitätswirtschaft":            reihe("KW", 3),
-  "Außenfinanzierung":               reihe("AF", 5),
-  "Kostenvergleichsrechnung":        reihe("KVR", 5),
-  "Dynamische Investitionsrechnung": reihe("DIR", 8),
-};
-
-// ===== HIER DIE 10 SPRÜCHE EINTRAGEN =====
-// Einer davon wird nach dem Würfeln zufällig angezeigt.
-const SPRUECHE = [
-  "Leider Schade, hätte ja schöner sein können",
-  "Wenn du das blickst, dann blickst du immer noch nicht den Lagerbestand.",
-  "Glückwunsch, du hast gewonnen. Die Aufgabe hat trotzdem keine Lust auf dich.",
-  "Tja, so ist das Leben. Und die Aufgabe",
-  "Schicksal entschieden, Ausreden gestrichen",
-  "Der Würfel lügt nicht, auch wenn du es dir anders gewünscht hättest",
-  "Keine Sorge, schlimmer geht's noch",
-  "Das war's, mehr Glück hattest du nicht verdient",
-  "Willkommen in der Realität, Abteilung Fertigung",
-  "Nicht meine Schuld, frag den Würfel",
-  "Überraschung. Keine gute",
-  "Hättste halt besser gewürfelt.",
-  "Es hätte schlimmer kommen können. Ist es aber nicht",
-  "Zufall nennt man das. Pech wäre das falsche Wort. Oder doch nicht.",
-  "Du wolltest Abwechslung, hier ist sie.",
-  "Kein Backup-Plan, nur diese Aufgabe.",
-  "Egal wie Scheiße du bist! Die IHK ist schlimmer",
-];
-
-const AUFGABEN = Object.entries(BEREICHE).flatMap(([thema, liste]) => liste.map(titel => ({ thema, titel })));
-
-// ===== AB HIER NICHTS ÄNDERN =====
-  const STORE = "aufgaben-wuerfel-erledigt";
-  const PIPS = { 1:[4], 2:[0,8], 3:[0,4,8], 4:[0,2,6,8], 5:[0,2,4,6,8], 6:[0,2,3,5,6,8] };
-  const key = a => a.thema + "|" + a.titel;
-
-  const $ = id => document.getElementById(id);
-  const dieEl = $("die"), resultEl = $("result"), rollBtn = $("roll"), doneBtn = $("markDone");
-  let erledigt = new Set(), aktuell = null, letzte = null;
-
-  try { erledigt = new Set(JSON.parse(localStorage.getItem(STORE)) || []); } catch {}
-  const speichern = () => { try { localStorage.setItem(STORE, JSON.stringify([...erledigt])); } catch {} };
-
-  for (let i = 0; i < 9; i++) dieEl.appendChild(Object.assign(document.createElement("div"), { className: "pip" }));
-  const zeigeAugen = n => [...dieEl.children].forEach((p, i) => p.classList.toggle("on", PIPS[n].includes(i)));
-  zeigeAugen(6);
-
-  const themen = [...new Set(AUFGABEN.map(a => a.thema))];
-  $("thema").innerHTML = '<option value="">Alle Themen</option>' + themen.map(t => `<option>${t}</option>`).join("");
-
-  function kandidaten() {
-    const t = $("thema").value;
-    return AUFGABEN.filter(a => (!t || a.thema === t) && !($("skipDone").checked && erledigt.has(key(a))));
-  }
-
-  function zeigeErgebnis(a, shuffling) {
-    resultEl.classList.toggle("shuffling", shuffling);
-    resultEl.innerHTML = `<div class="thema">${a.thema}</div><div class="titel">${a.titel}</div>`;
-  }
-
-  function wuerfeln() {
-    let pool = kandidaten();
-    if (!pool.length) {
-      resultEl.innerHTML = '<div class="hint">Keine offenen Aufgaben mehr 🎉 – Filter ändern oder zurücksetzen.</div>';
-      doneBtn.hidden = true; return;
-    }
-    if (pool.length > 1) pool = pool.filter(a => a !== letzte); // nicht zweimal dieselbe hintereinander
-    const ziel = pool[Math.floor(Math.random() * pool.length)];
-
-    rollBtn.disabled = true; doneBtn.hidden = true;
-    dieEl.classList.add("rolling");
-    const start = Date.now();
-    const tick = setInterval(() => {
-      zeigeAugen(1 + Math.floor(Math.random() * 6));
-      zeigeErgebnis(pool[Math.floor(Math.random() * pool.length)], true);
-      if (Date.now() - start > 1200) {
-        clearInterval(tick);
-        dieEl.classList.remove("rolling");
-        zeigeAugen(1 + Math.floor(Math.random() * 6));
-        zeigeErgebnis(ziel, false);
-        aktuell = letzte = ziel;
-        rollBtn.disabled = false; doneBtn.hidden = false;
-        feiern(ziel);
-      }
-    }, 80);
-  }
-
-  function renderListe() {
-    $("list").innerHTML = "";
-    AUFGABEN.forEach(a => {
-      const li = document.createElement("li");
-      li.className = erledigt.has(key(a)) ? "done" : "";
-      li.innerHTML = `<label><input type="checkbox" ${erledigt.has(key(a)) ? "checked" : ""}> <span>${a.titel}</span> <em class="tag">${a.thema}</em></label>`;
-      li.querySelector("input").onchange = e => { e.target.checked ? erledigt.add(key(a)) : erledigt.delete(key(a)); speichern(); renderListe(); };
-      $("list").appendChild(li);
-    });
-    const n = AUFGABEN.filter(a => erledigt.has(key(a))).length;
-    $("progress").textContent = `${n} / ${AUFGABEN.length} erledigt`;
-  }
-
-  // Feuerwerk + Gratulation
-  const canvas = $("feuerwerk"), ctx = canvas.getContext("2d"), overlay = $("overlay");
-  let funken = [], raketen = 0, animiert = false;
-
-  function rakete() {
-    const w = canvas.width, h = canvas.height;
-    const x = w * (0.15 + Math.random() * 0.7), y = h * (0.15 + Math.random() * 0.35);
-    const farbe = `hsl(${Math.floor(Math.random() * 360)}, 90%, 60%)`;
-    for (let i = 0; i < 70; i++) {
-      const winkel = Math.random() * Math.PI * 2, tempo = 1.5 + Math.random() * 4.5;
-      funken.push({ x, y, vx: Math.cos(winkel) * tempo, vy: Math.sin(winkel) * tempo, leben: 1, farbe });
-    }
-  }
-
-  function zeichnen() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    funken = funken.filter(f => f.leben > 0);
-    for (const f of funken) {
-      f.x += f.vx; f.y += f.vy; f.vy += 0.06; f.vx *= 0.985; f.leben -= 0.012;
-      ctx.globalAlpha = Math.max(f.leben, 0);
-      ctx.fillStyle = f.farbe;
-      ctx.beginPath(); ctx.arc(f.x, f.y, 2.5, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-    if (funken.length || raketen > 0) requestAnimationFrame(zeichnen); else animiert = false;
-  }
-
-  function feiern(a) {
-    canvas.width = innerWidth; canvas.height = innerHeight;
-    $("gAufgabe").textContent = a.titel;
-    $("gBereich").textContent = a.thema;
-    $("gSpruch").textContent = SPRUECHE[Math.floor(Math.random() * SPRUECHE.length)];
-    overlay.hidden = false;
-    raketen = 8;
-    const feuer = () => { rakete(); if (--raketen > 0) setTimeout(feuer, 250 + Math.random() * 300); };
-    feuer();
-    if (!animiert) { animiert = true; zeichnen(); }
-  }
-
-  $("gOk").onclick = () => { overlay.hidden = true; };
-  overlay.onclick = e => { if (e.target === overlay) overlay.hidden = true; };
-
-  rollBtn.onclick = wuerfeln;
-  doneBtn.onclick = () => { if (aktuell) { erledigt.add(key(aktuell)); speichern(); renderListe(); doneBtn.hidden = true; } };
-  $("reset").onclick = () => { if (confirm("Alle Aufgaben wieder als offen markieren?")) { erledigt.clear(); speichern(); renderListe(); } };
-  renderListe();
-</script>
+<dialog id="entryDialog" aria-labelledby="entryDialogTitle">
+  <form id="entryForm"><div class="section-head"><h2 id="entryDialogTitle">Aufgabe hinzufügen</h2><button type="button" class="icon-btn" data-close="entryDialog" aria-label="Schließen">×</button></div>
+    <input type="hidden" id="entryId"><label class="field"><span id="entryGroupLabel">Themenfeld</span><select id="entryGroup" required></select></label>
+    <label class="field" id="taskFields">Aufgabenbezeichnung<input id="entryTitle" maxlength="250" required placeholder="z. B. DBR-11"></label>
+    <div id="examFields" hidden><div class="form-row"><label class="field">Termin<input id="entryTerm" maxlength="80" placeholder="z. B. Frühjahr" list="terms"></label><label class="field year-field">Jahr<input id="entryYear" type="text" inputmode="numeric" pattern="[1-9][0-9]{3}" maxlength="4" placeholder="2024"></label></div><label class="field">Zusatz <span class="hint">optional</span><input id="entryNote" maxlength="500" placeholder="z. B. Nachprüfung"></label><datalist id="terms"><option value="Frühjahr"><option value="Herbst"></datalist><p class="hint" id="examPreview"></p></div>
+    <p id="entryError" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="btn" data-close="entryDialog">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
+</dialog>
+<dialog id="groupsDialog" aria-labelledby="groupsDialogTitle"><div class="section-head"><h2 id="groupsDialogTitle">Themen verwalten</h2><button id="closeGroups" class="icon-btn" data-close="groupsDialog" aria-label="Schließen">×</button></div><p class="hint">Umbenennen erhält deine Einträge und deinen Fortschritt. Nur leere Bereiche lassen sich löschen.</p><ul id="groupList" class="group-list"></ul>
+  <form id="groupForm"><input id="groupId" type="hidden"><label class="field" for="groupName" id="groupNameLabel">Neues Themenfeld</label><div class="input-action"><input id="groupName" required maxlength="250" placeholder="Bezeichnung eingeben"><button class="btn primary" id="saveGroup" type="submit">Hinzufügen</button></div><button id="cancelGroupEdit" class="text-btn" type="button" hidden>Umbenennen abbrechen</button><p id="groupError" class="form-error" role="alert" hidden></p></form>
+</dialog>
+<dialog id="confirmDialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle">Bitte bestätigen</h2><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="btn">Abbrechen</button><button id="confirmOk" class="btn danger">Bestätigen</button></div></dialog>
+<dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">Sicherung importieren</h2><p id="importSummary"></p><p class="notice">Der Import ersetzt alle Aufgaben, Prüfungen, Einstellungen und Fortschritte in diesem Browser. Exportiere vorher deine aktuellen Daten.</p><button id="backupBeforeImport" class="btn">↓ Aktuellen Stand zuerst exportieren</button><label class="import-consent"><input id="importConsent" type="checkbox"> Ich möchte den aktuellen Datenbestand durch diese Sicherung ersetzen.</label><p id="importError" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="btn" data-close="importDialog">Abbrechen</button><button id="confirmImport" class="btn primary" disabled>Sicherung übernehmen</button></div></dialog>
+<noscript><p>Bitte JavaScript aktivieren, um den Lernwürfel zu verwenden.</p></noscript>
 </body>
 </html>
