@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Dein Lernwürfel für den Technischen Betriebswirt: Aufgaben und Prüfungen verwalten, auswählen und würfeln.">
+<title>TBW · Lernwürfel</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #eef2f9;
+  --card: #ffffff;
+  --text: #18233d;
+  --muted: #515f79;
+  --accent: #344bd7;
+  --accent-text: #fff;
+  --border: #d9e1ef;
+  --soft: #edf1ff;
+  --done: #17654d;
+  --danger: #a62d40;
+  --shadow: 0 12px 30px #223b6510;
+  --page-glow: #dfe7ff;
+  --track: #e2e8f4;
+}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1425;--card:#151f34;--text:#f0f4ff;--muted:#b0bdd5;--accent:#aebaff;--accent-text:#172456;--border:#303d59;--soft:#202d50;--done:#79dbb7;--danger:#ff9bac;--shadow:0 12px 32px #0003;--page-glow:#182848;--track:#202b43}}
+*{box-sizing:border-box}body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse 54rem 38rem at 50% 0, var(--page-glow), transparent), var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, sans-serif;
+}main {
+  max-width: 1120px;
+  margin: auto;
+  padding: 48px 24px 24px;
+}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:default}input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px;flex-shrink:0}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}[hidden]{display:none!important}h1,h2,p{margin:0}h1 {
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -.06em;
+  margin: 8px 0 10px;
+}h2{font-size:1.1rem;letter-spacing:-.015em}.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 28px;
+}.eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.16em;color:var(--muted)}.subtitle,.hint{color:var(--muted)}.hint{font-size:.86rem;line-height:1.55}.local-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .76rem;
+  font-weight: 650;
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 7px 12px;
+  color: var(--done);
+  background: var(--card);
+}.mode-switch {
+  display: flex;
+  gap: 5px;
+  background: var(--track);
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  max-width: 410px;
+  margin-bottom: 22px;
+}.mode-switch button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 650;
+  min-height: 44px;
+  padding: 8px;
+  border-radius: 11px;
+}.mode-switch button[aria-pressed=true] {
+  background: var(--card);
+  color: var(--accent);
+  box-shadow: 0 2px 6px #101d401a;
+}.workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:20px;margin-bottom:20px}.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+  min-width: 0;
+}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.selection>.hint{margin-top:6px}.count{color:var(--accent);font-size:.8rem;white-space:nowrap}.text-actions{display:flex;gap:18px;margin:12px 0}.text-btn{border:0;padding:0;background:transparent;color:var(--accent);font-size:.83rem;text-decoration:underline;text-underline-offset:3px}.group-options {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 18px;
+}.group-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: .84rem;
+}.group-name{flex:1;overflow-wrap:anywhere}.group-option:hover, .group-option:has(input:checked) { background: var(--soft); }
+.group-count{color:var(--muted);font-variant-numeric:tabular-nums;font-size:.75rem}.btn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 11px;
+  padding: 9px 14px;
+  min-height: 40px;
+  font-weight: 650;
+  font-size: .85rem;
+  line-height: 1.5;
+}.btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}.btn.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}.btn.primary:hover:not(:disabled){filter:brightness(.94);color:var(--accent-text)}.btn.success{color:var(--done)}.btn.danger{color:var(--danger)}.btn.full{width:100%}.stage {
+  color-scheme: dark;
+  --text: #f5f7ff;
+  --muted: #c5d1ec;
+  --card: #1e2d55;
+  --border: #536797;
+  --accent: #bdcaff;
+  --accent-text: #182555;
+  --done: #9aebcd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 18px;
+  min-height: 490px;
+  color: var(--text);
+  background: radial-gradient(ellipse at 50% 30%, #344990 0, transparent 66%), #17264d;
+}.die {
+  width: 112px;
+  height: 112px;
+  background: linear-gradient(145deg, #fff 15%, #e6edff 75%);
+  border: 1px solid #fff;
+  border-radius: 26px;
+  box-shadow: 0 7px 0 #97a9da, 0 9px 0 #6579b1, 0 20px 36px #091537aa, inset 0 1px 4px #fff;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 16px;
+  transform: rotate(-8deg);
+  margin: 14px 0 11px;
+}.pip {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #25386c, #4765b1);
+  box-shadow: inset 0 1px 2px #0e1a46a8;
+  place-self: center;
+  visibility: hidden;
+}.pip.on{visibility:visible}.die.rolling{animation:roll .5s ease-in-out infinite}@keyframes roll{0%{transform:rotate(-8deg)}50%{transform:rotate(172deg) scale(.9)}100%{transform:rotate(352deg)}}.result{min-height:100px;display:flex;flex-direction:column;justify-content:center;gap:5px;max-width:100%;overflow-wrap:anywhere}.result h2 {
+  font-size: clamp(1.45rem, 3vw, 2.05rem);
+  line-height: 1.16;
+  letter-spacing: -.035em;
+}.roll-btn {
+  font-size: 1rem;
+  padding: 12px 34px;
+  border-radius: 14px;
+  min-height: 48px;
+}.skip-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  font-size: .85rem;
+  cursor: pointer;
+}.stage #poolCount{margin-top:-12px}.library{margin-bottom:20px}.actions{display:flex;gap:8px;flex-wrap:wrap}.library-head{align-items:flex-start}.library-head .hint{margin-top:5px}.progress-line{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:20px 0 6px;font-size:.8rem;font-weight:600;color:var(--done)}progress {
+  width: 100%;
+  height: 8px;
+  display: block;
+  border: 0;
+  appearance: none;
+  accent-color: var(--done);
+  background: var(--track);
+  border-radius: 10px;
+  overflow: hidden;
+}progress::-webkit-progress-bar{background:var(--track)}progress::-webkit-progress-value{background:var(--done)}progress::-moz-progress-bar{background:var(--done)}ul{list-style:none;margin:0;padding:0}.entry-list{margin-top:12px;max-height:460px;overflow:auto;scrollbar-width:thin}.entry-list li{display:flex;gap:10px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding:11px 2px}.entry-list li:hover { background: var(--soft); }
+.entry-label{display:flex;gap:12px;align-items:center;cursor:pointer;min-width:0;flex:1}.entry-copy{display:flex;flex-direction:column;overflow-wrap:anywhere;min-width:0}.entry-title{font-weight:600;font-size:.9rem}.entry-meta{font-size:.76rem;color:var(--muted)}li.done .entry-title{text-decoration:line-through;color:var(--muted)}.row-actions{display:flex;gap:5px;flex-shrink:0}.row-actions .btn{font-size:.78rem;padding:5px 9px;min-height:32px}.empty{color:var(--muted);padding:24px 0!important;font-size:.9rem;display:block!important}.reset-btn{margin-top:18px;color:var(--muted)}.backup{display:flex;justify-content:space-between;align-items:center;gap:24px}.backup .hint{margin-top:5px;max-width:550px}.backup .actions{flex-shrink:0}footer{font-size:.75rem;text-align:center;line-height:1.9;color:var(--muted);padding:24px 0 10px}.notice{padding:12px 16px;border-radius:10px;background:var(--soft);font-size:.85rem;margin-bottom:18px;overflow-wrap:anywhere}.error,.form-error{color:var(--danger)}.error{border:1px solid var(--danger)}dialog{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:20px;padding:26px;width:min(540px,calc(100vw - 32px));max-height:85vh;box-shadow:0 24px 80px #0003}dialog::backdrop{background:#11182788;backdrop-filter:blur(3px)}dialog>p,dialog>.hint{margin:12px 0}dialog h2{font-size:1.25rem}.icon-btn{border:0;background:transparent;color:var(--muted);font-size:1.5rem;padding:0 5px}.field{display:flex;flex-direction:column;gap:6px;font-size:.85rem;font-weight:600;margin-top:18px}input:not([type=checkbox]):not([type=hidden]):not([type=file]),select{background:var(--bg);color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:9px;width:100%;min-width:0}select{max-width:100%}.form-row{display:flex;gap:14px}.form-row .field{flex:1}.form-row .year-field{flex:0 0 115px}.dialog-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:24px}.form-error{font-size:.85rem;margin-top:12px}.group-list{max-height:290px;overflow:auto;margin-top:14px}.group-list li{padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;justify-content:space-between}.group-list li>span{overflow-wrap:anywhere;min-width:0;font-size:.86rem}.input-action{display:flex;gap:8px;margin-top:6px}.import-consent{display:flex;gap:10px;margin-top:20px;font-size:.88rem}.import-consent input{margin-top:3px}#examPreview{margin-top:14px}#cancelGroupEdit{margin-top:12px}
+@media(max-width:740px){main{padding:24px 16px}.header{align-items:flex-start}.workspace{grid-template-columns:1fr}.stage{grid-row:1;min-height:420px}.group-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 14px}.library-head{flex-direction:column}.backup{flex-direction:column;align-items:flex-start}.card{padding:20px}.entry-list li{flex-wrap:wrap}.entry-label{min-width:min(180px,100%)}.row-actions{margin-left:auto}.group-list li{flex-wrap:wrap}.form-row{gap:10px}.selection{order:2}}
+@media(max-width:400px){.group-options{grid-template-columns:1fr}.actions .btn{padding:8px 10px;font-size:.8rem}dialog{padding:20px}.input-action{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important}}
+
+</style>
+
+
+</head>
+<body>
+<main>
+  <header class="header"><div><p class="eyebrow">TECHNISCHER BETRIEBSWIRT</p><h1>Dein Lernwürfel</h1><p class="subtitle">Weniger überlegen. Einfach anfangen.</p></div><span class="local-badge"><span aria-hidden="true">●</span> Lokal gespeichert</span></header>
+  <p id="storageWarning" class="notice error" role="alert" hidden></p>
+  <p id="message" class="notice" role="status" hidden></p>
+  <nav class="mode-switch" aria-label="Würfelmodus"><button id="modeTasks" aria-pressed="true">Übungsaufgaben</button><button id="modeExams" aria-pressed="false">Prüfungen</button></nav>
+  <div class="workspace">
+    <section class="card selection" aria-labelledby="selectionTitle">
+      <div class="section-head"><h2 id="selectionTitle">Deine Themenfelder</h2><span class="count" id="selectionCount"></span></div>
+      <p class="hint">Wähle aus, was in den Würfeltopf kommt.</p>
+      <div class="text-actions"><button id="selectAll" class="text-btn">Alle auswählen</button><button id="selectNone" class="text-btn">Keine</button></div>
+      <div id="groups" class="group-options"></div>
+      <button id="manageGroups" class="btn full">Themen verwalten</button>
+    </section>
+    <section class="card stage" aria-label="Würfel">
+      <span class="eyebrow" id="stageMode">DEINE NÄCHSTE AUFGABE</span>
+      <div class="die" id="die" aria-hidden="true"></div>
+      <div id="result" class="result" role="status" aria-live="polite" aria-atomic="true"><p class="hint" id="resultGroup"></p><h2 id="resultTitle">Bereit für die nächste Runde?</h2><p class="hint" id="resultHint">Dein nächster Lernschritt ist nur einen Wurf entfernt.</p></div>
+      <button class="btn primary roll-btn" id="roll">Jetzt würfeln</button>
+      <button class="btn success" id="markDone" hidden>✓ Als erledigt markieren</button>
+      <label class="skip-label"><input type="checkbox" id="skipDone" checked> Erledigte nicht mehr würfeln</label>
+      <p id="poolCount" class="hint"></p>
+    </section>
+  </div>
+  <section class="card library" aria-labelledby="listTitle">
+    <div class="section-head library-head"><div><h2 id="listTitle">Deine Aufgaben</h2><p id="listHint" class="hint">Einträge aus deinen ausgewählten Themenfeldern.</p></div><div class="actions"><button id="manageToggle" class="btn" aria-pressed="false">Liste bearbeiten</button><button id="addEntry" class="btn primary">+ Aufgabe hinzufügen</button></div></div>
+    <div class="progress-line"><span id="progress"></span><span id="totalCount" class="hint"></span></div><progress id="progressBar" value="0" max="70" aria-label="Fortschritt der angezeigten Einträge"></progress>
+    <ul id="list" class="entry-list"></ul>
+    <button id="reset" class="text-btn reset-btn">Fortschritt dieses Modus zurücksetzen</button>
+  </section>
+  <section class="backup card" aria-labelledby="backupTitle"><div><h2 id="backupTitle">Dein Lernstand. Zum Mitnehmen.</h2><p class="hint">Aufgaben, Prüfungen und Fortschritt als Datei sichern oder auf ein anderes Gerät übertragen.</p></div><div class="actions"><button id="export" class="btn">↓ Exportieren</button><button id="import" class="btn">↑ Importieren</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></section>
+  <footer>Alles bleibt in diesem Browser. Exportiere regelmäßig eine Sicherung.<br>Kein Konto · Kein Server · Dein Lerntempo</footer>
+</main>
+<dialog id="entryDialog" aria-labelledby="entryDialogTitle">
+  <form id="entryForm"><div class="section-head"><h2 id="entryDialogTitle">Aufgabe hinzufügen</h2><button type="button" class="icon-btn" data-close="entryDialog" aria-label="Schließen">×</button></div>
+    <input type="hidden" id="entryId"><label class="field"><span id="entryGroupLabel">Themenfeld</span><select id="entryGroup" required></select></label>
+    <label class="field" id="taskFields">Aufgabenbezeichnung<input id="entryTitle" maxlength="250" required placeholder="z. B. DBR-11"></label>
+    <div id="examFields" hidden><div class="form-row"><label class="field">Termin<input id="entryTerm" maxlength="80" placeholder="z. B. Frühjahr" list="terms"></label><label class="field year-field">Jahr<input id="entryYear" type="text" inputmode="numeric" pattern="[1-9][0-9]{3}" maxlength="4" placeholder="2024"></label></div><label class="field">Zusatz <span class="hint">optional</span><input id="entryNote" maxlength="500" placeholder="z. B. Nachprüfung"></label><datalist id="terms"><option value="Frühjahr"><option value="Herbst"></datalist><p class="hint" id="examPreview"></p></div>
+    <p id="entryError" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button type="button" class="btn" data-close="entryDialog">Abbrechen</button><button class="btn primary" type="submit">Speichern</button></div>
+  </form>
+</dialog>
+<dialog id="groupsDialog" aria-labelledby="groupsDialogTitle"><div class="section-head"><h2 id="groupsDialogTitle">Themen verwalten</h2><button id="closeGroups" class="icon-btn" data-close="groupsDialog" aria-label="Schließen">×</button></div><p class="hint">Umbenennen erhält deine Einträge und deinen Fortschritt. Nur leere Bereiche lassen sich löschen.</p><ul id="groupList" class="group-list"></ul>
+  <form id="groupForm"><input id="groupId" type="hidden"><label class="field" for="groupName" id="groupNameLabel">Neues Themenfeld</label><div class="input-action"><input id="groupName" required maxlength="250" placeholder="Bezeichnung eingeben"><button class="btn primary" id="saveGroup" type="submit">Hinzufügen</button></div><button id="cancelGroupEdit" class="text-btn" type="button" hidden>Umbenennen abbrechen</button><p id="groupError" class="form-error" role="alert" hidden></p></form>
+</dialog>
+<dialog id="confirmDialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle">Bitte bestätigen</h2><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="btn">Abbrechen</button><button id="confirmOk" class="btn danger">Bestätigen</button></div></dialog>
+<dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">Sicherung importieren</h2><p id="importSummary"></p><p class="notice">Der Import ersetzt alle Aufgaben, Prüfungen, Einstellungen und Fortschritte in diesem Browser. Exportiere vorher deine aktuellen Daten.</p><button id="backupBeforeImport" class="btn">↓ Aktuellen Stand zuerst exportieren</button><label class="import-consent"><input id="importConsent" type="checkbox"> Ich möchte den aktuellen Datenbestand durch diese Sicherung ersetzen.</label><p id="importError" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="btn" data-close="importDialog">Abbrechen</button><button id="confirmImport" class="btn primary" disabled>Sicherung übernehmen</button></div></dialog>
+<noscript><p>Bitte JavaScript aktivieren, um den Lernwürfel zu verwenden.</p></noscript>
+<script>
+/* Pure data model; deliberately usable without a server or module loader. */
+(function () {
+  'use strict';
+  const MODES = ['tasks', 'exams'];
+  const MAX_BYTES = 5 * 1024 * 1024;
+  function byteLength(value) {
+    let size=0;
+    for(const char of value) {const point=char.codePointAt(0);size+=point>0xffff?4:point>0x7ff?3:point>0x7f?2:1;}
+    return size;
+  }
+  const DEFAULTS = [
+    ['Deckungsbeitragsrechnung','DBR',10], ['Plankostenrechnung','PKR',10],
+    ['Gemeinkostenzuschlagsrechnung','GKZ',6], ['Maschinenstundensatzrechnung','MSZ',10],
+    ['Bilanzansatz','BilAn',3], ['Lagerbestandsrechnung','MBLBR',7], ['Bedarfsrechnung','BR',3],
+    ['Kapazitätswirtschaft','KW',3], ['Außenfinanzierung','AF',5],
+    ['Kostenvergleichsrechnung','KVR',5], ['Dynamische Investitionsrechnung','DIR',8]
+  ];
+  const fail = message => { throw new Error(message); };
+  const clone = value => JSON.parse(JSON.stringify(value));
+  const normalized = value => value.trim().toLocaleLowerCase('de');
+  function object(value, fields, label) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) fail(`${label}: Objekt erwartet.`);
+    if (Object.keys(value).length !== fields.length || fields.some(f => !Object.hasOwn(value,f))) fail(`${label}: Felder fehlen oder sind unbekannt.`);
+  }
+  function text(value, label, max = 250, optional = false) {
+    if (typeof value !== 'string' || value.length > max || (!optional && !value.trim())) fail(`${label}: gültigen Text mit höchstens ${max} Zeichen eingeben.`);
+  }
+  function array(value, label, max = 10000) {
+    if (!Array.isArray(value) || value.length > max) fail(`${label}: Liste mit höchstens ${max} Einträgen erwartet.`);
+  }
+  function validateState(s) {
+    object(s,['format','version','mode','collections'],'Sicherung');
+    if (s.format !== 'tbw-wuerfel' || s.version !== 1) fail('Unbekanntes Dateiformat oder nicht unterstützte Version.');
+    if (!MODES.includes(s.mode)) fail('Ungültiger Würfelmodus.');
+    object(s.collections, MODES, 'Bereiche');
+    const ids = new Set();
+    const id = value => { text(value,'ID',120); if (ids.has(value)) fail('Doppelte ID in der Sicherung.'); ids.add(value); };
+    for (const mode of MODES) {
+      const c = s.collections[mode];
+      object(c,['groups','entries','selected','done','skipDone'],mode);
+      for (const field of ['groups','entries','selected','done']) array(c[field],field);
+      if (typeof c.skipDone !== 'boolean') fail('Ungültige Einstellung für erledigte Einträge.');
+      const groupIds = new Set(), entryIds = new Set(), groupNames = new Set(), entryNames = new Set();
+      for (const g of c.groups) {
+        object(g,['id','name'],'Fach/Thema'); id(g.id); text(g.name,'Fach/Thema');
+        const name = normalized(g.name); if (groupNames.has(name)) fail('Dieses Fach/Thema gibt es bereits.');
+        groupNames.add(name); groupIds.add(g.id);
+      }
+      for (const e of c.entries) {
+        object(e,mode === 'tasks' ? ['id','groupId','title'] : ['id','groupId','term','year','note'],'Eintrag');
+        id(e.id); if (!groupIds.has(e.groupId)) fail('Ein Eintrag verweist auf ein unbekanntes Fach/Thema.');
+        if (mode === 'tasks') text(e.title,'Aufgabenbezeichnung');
+        else {
+          text(e.term,'Prüfungstermin',80); text(e.note,'Zusatz',500,true);
+          if (typeof e.year !== 'string' || !/^[1-9][0-9]{3}$/.test(e.year)) fail('Das Prüfungsjahr muss vierstellig sein (1000–9999).');
+        }
+        const name = JSON.stringify(mode === 'tasks' ? [e.groupId,normalized(e.title)] : [e.groupId,normalized(e.term),e.year,normalized(e.note)]);
+        if (entryNames.has(name)) fail('Diesen Eintrag gibt es in diesem Fach/Thema bereits.');
+        entryNames.add(name); entryIds.add(e.id);
+      }
+      for (const [field,allowed] of [['selected',groupIds],['done',entryIds]]) {
+        const seen = new Set();
+        for (const ref of c[field]) {
+          if (!allowed.has(ref) || seen.has(ref)) fail(`Ungültige oder doppelte Referenz: ${field}.`);
+          seen.add(ref);
+        }
+      }
+    }
+    // Bound the canonical export, not just the input file. Every accepted state
+    // must also remain reloadable and restorable after JSON formatting.
+    const canonical=JSON.stringify(s,null,2);
+    if(canonical.length>MAX_BYTES || byteLength(canonical)>MAX_BYTES) fail('Der Datenbestand ist zu groß für eine wiederherstellbare Sicherung (maximal 5 MB). Bitte weniger Einträge oder kürzere Texte verwenden.');
+    return s;
+  }
+  function createInitialState(legacyDone = []) {
+    const empty = () => ({groups:[],entries:[],selected:[],done:[],skipDone:true});
+    const s = {format:'tbw-wuerfel',version:1,mode:'tasks',collections:{tasks:empty(),exams:empty()}};
+    const old = new Set(Array.isArray(legacyDone) ? legacyDone.filter(x=>typeof x==='string') : []);
+    const c = s.collections.tasks;
+    for (const [name,short,count] of DEFAULTS) {
+      const groupId = `topic-${short}`; c.groups.push({id:groupId,name}); c.selected.push(groupId);
+      for (let i=1;i<=count;i++) {
+        const title=`${short}-${i}`, entryId=`task-${title}`;
+        c.entries.push({id:entryId,groupId,title}); if(old.has(`${name}|${title}`)) c.done.push(entryId);
+      }
+    }
+    return validateState(s);
+  }
+  function collection(s, mode) { if (!MODES.includes(mode)) fail('Ungültiger Modus.'); return s.collections[mode]; }
+  function change(s, mode, action) { const next = clone(s); action(collection(next,mode)); return validateState(next); }
+  function getCandidates(s, mode) {
+    const c=collection(s,mode), selected=new Set(c.selected), done=new Set(c.done);
+    return c.entries.filter(e=>selected.has(e.groupId) && (!c.skipDone || !done.has(e.id)));
+  }
+  function editGroup(s,mode,group) {
+    return change(s,mode,c=>{
+      const value={id:group.id,name:typeof group.name==='string'?group.name.trim():group.name};
+      const index=c.groups.findIndex(g=>g.id===group.id);
+      if(index<0) { c.groups.push(value); c.selected.push(value.id); } else c.groups[index]=value;
+    });
+  }
+  function editEntry(s,mode,entry) {
+    return change(s,mode,c=>{
+      const value=mode==='tasks'?{id:entry.id,groupId:entry.groupId,title:entry.title?.trim()}:
+        {id:entry.id,groupId:entry.groupId,term:entry.term?.trim(),year:entry.year,note:entry.note?.trim()};
+      const index=c.entries.findIndex(e=>e.id===entry.id);
+      if(index<0) c.entries.push(value); else c.entries[index]=value;
+    });
+  }
+  function removeGroup(s,mode,id) {
+    return change(s,mode,c=>{
+      if(c.entries.some(e=>e.groupId===id)) fail('Dieses Fach/Thema enthält noch Einträge. Diese zuerst löschen oder einem anderen Bereich zuordnen.');
+      c.groups=c.groups.filter(g=>g.id!==id);c.selected=c.selected.filter(x=>x!==id);
+    });
+  }
+  function removeEntry(s,mode,id) { return change(s,mode,c=>{c.entries=c.entries.filter(e=>e.id!==id);c.done=c.done.filter(x=>x!==id);}); }
+  function setDone(s,mode,id,done) { return change(s,mode,c=>{c.done=c.done.filter(x=>x!==id);if(done)c.done.push(id);}); }
+  function entryLabel(s,mode,e) {
+    if(mode==='tasks') return e.title;
+    const group=collection(s,mode).groups.find(g=>g.id===e.groupId);
+    return `${group.name} – ${e.term} ${e.year}${e.note?' · '+e.note:''}`;
+  }
+  function choose(pool,lastId,random=Math.random) {
+    if(!pool.length) return null;
+    const filtered=pool.length>1?pool.filter(e=>e.id!==lastId):pool;
+    return filtered[Math.floor(random()*filtered.length)];
+  }
+  function exportState(s) { return JSON.stringify(validateState(s),null,2); }
+  function importState(json) {
+    if(typeof json!=='string' || json.length>MAX_BYTES || byteLength(json)>MAX_BYTES) fail('Die Sicherung ist zu groß (maximal 5 MB).');
+    let s; try { s=JSON.parse(json); } catch { fail('Die Datei enthält kein gültiges JSON.'); }
+    return validateState(s);
+  }
+  globalThis.TBW={createInitialState,validateState,getCandidates,editGroup,editEntry,removeGroup,removeEntry,setDone,entryLabel,choose,exportState,importState};
+})();
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const D=globalThis.TBW, $=id=>document.getElementById(id), STORE='tbw-wuerfel-v1', LEGACY='aufgaben-wuerfel-erledigt';
+  const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+  const SAYINGS=[
+  "Leider Schade, hätte ja schöner sein können",
+  "Wenn du das blickst, dann blickst du immer noch nicht den Lagerbestand.",
+  "Glückwunsch, du hast gewonnen. Die Aufgabe hat trotzdem keine Lust auf dich.",
+  "Tja, so ist das Leben. Und die Aufgabe",
+  "Schicksal entschieden, Ausreden gestrichen",
+  "Der Würfel lügt nicht, auch wenn du es dir anders gewünscht hättest",
+  "Keine Sorge, schlimmer geht's noch",
+  "Das war's, mehr Glück hattest du nicht verdient",
+  "Willkommen in der Realität, Abteilung Fertigung",
+  "Nicht meine Schuld, frag den Würfel",
+  "Überraschung. Keine gute",
+  "Hättste halt besser gewürfelt.",
+  "Es hätte schlimmer kommen können. Ist es aber nicht",
+  "Zufall nennt man das. Pech wäre das falsche Wort. Oder doch nicht.",
+  "Du wolltest Abwechslung, hier ist sie.",
+  "Kein Backup-Plan, nur diese Aufgabe.",
+  "Egal wie Scheiße du bist! Die IHK ist schlimmer",
+];
+  let state, storageBlocked=false, manage=false, current=null, last={tasks:null,exams:null}, rolling=null, pendingImport=null, confirmAction=null;
+  const copy=s=>JSON.parse(JSON.stringify(s));
+  const c=()=>state.collections[state.mode];
+  const isExam=()=>state.mode==='exams';
+  const noun=()=>isExam()?'Prüfung':'Aufgabe';
+  const groupNoun=()=>isExam()?'Fach':'Themenfeld';
+  function el(tag,text,className) { const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node; }
+  function button(text,action,className='btn') {const b=el('button',text,className);b.type='button';b.onclick=action;return b;}
+  function errorAt(id,error) {$(id).textContent=error.message||String(error);$(id).hidden=false;}
+  function notify(text) {$('message').textContent=text;$('message').hidden=false;}
+  function storageError(text) {$('storageWarning').textContent=text;$('storageWarning').hidden=false;document.querySelector('.local-badge').textContent='! Nicht dauerhaft gespeichert';}
+  function save() {
+    if(storageBlocked)return;
+    try {localStorage.setItem(STORE,D.exportState(state));$('storageWarning').hidden=true;document.querySelector('.local-badge').textContent='● Lokal gespeichert';}
+    catch {storageError('Deine Änderungen sind nur für diese Sitzung verfügbar: Der Browser konnte sie nicht speichern. Bitte exportiere jetzt eine Sicherung.');}
+  }
+  function load() {
+    try {
+      const raw=localStorage.getItem(STORE);
+      if(raw!==null) {state=D.importState(raw);return;}
+      let legacy=[];const old=localStorage.getItem(LEGACY);
+      if(old!==null) {try {legacy=JSON.parse(old);} catch {notify('Der alte Erledigt-Status konnte nicht gelesen werden. Die ursprünglichen Daten bleiben erhalten.');}}
+      state=D.createInitialState(legacy);save();
+    } catch {
+      state=D.createInitialState();storageBlocked=true;
+      storageError('Gespeicherte Daten konnten nicht gelesen werden. Sie werden nicht überschrieben. Angezeigt wird ein vorläufiger Ausgangsstand; Änderungen bleiben nur in dieser Sitzung. Importiere eine gültige Sicherung zur Wiederherstellung.');
+    }
+  }
+  function cancelRoll() {if(rolling!==null){clearInterval(rolling);rolling=null;}$('die').classList.remove('rolling');}
+  function commit(next,{keepResult=false,replaceStorage=false}={}) {
+    D.validateState(next);cancelRoll();state=next;
+    if(!keepResult)current=null;
+    if(replaceStorage)storageBlocked=false;
+    save();render();
+  }
+  function update(action) {const next=copy(state);action(next.collections[next.mode]);commit(next);}
+  function showDialog(id) {if(!$(id).open)$(id).showModal();}
+  function closeDialog(id) {$(id).close();}
+  function confirm(title,text,action) { $('confirmTitle').textContent=title;$('confirmText').textContent=text;confirmAction=action;showDialog('confirmDialog');$('confirmCancel').focus(); }
+  function eyes(n) {[...$('die').children].forEach((p,i)=>p.classList.toggle('on',PIPS[n].includes(i)));}
+  function resetResult() {
+    $('resultGroup').textContent='';$('resultTitle').textContent='Bereit für die nächste Runde?';
+    $('resultHint').textContent=!c().groups.length?`Lege zuerst ein ${groupNoun()} und eine ${noun()} an.`:
+      !c().selected.length?'Wähle mindestens ein Themenfeld oder Fach aus.':
+      !D.getCandidates(state,state.mode).length?'Keine offenen Einträge verfügbar. Passe die Auswahl an oder schließe Erledigte ein.':'Dein nächster Lernschritt ist nur einen Wurf entfernt.';
+    $('markDone').hidden=true;
+  }
+  function renderGroups() {
+    const collection=c(),selected=new Set(collection.selected),done=new Set(collection.done),container=$('groups');container.replaceChildren();
+    if(!collection.groups.length)container.append(el('p',isExam()?'Noch keine Fächer. Lege z. B. VWL an.':'Noch keine Themenfelder.','empty'));
+    for(const g of collection.groups) {
+      const entries=collection.entries.filter(e=>e.groupId===g.id),count=entries.filter(e=>done.has(e.id)).length;
+      const label=el('label',undefined,'group-option'),input=el('input');input.type='checkbox';input.checked=selected.has(g.id);
+      input.onchange=()=>{const focusId=g.id;update(c=>{c.selected=input.checked?[...c.selected,g.id]:c.selected.filter(id=>id!==g.id);});[...container.querySelectorAll('input')].find(i=>i.dataset.group===focusId)?.focus();};input.dataset.group=g.id;
+      const name=el('span',g.name,'group-name'),numbers=el('span',`${count}/${entries.length}`,'group-count');numbers.title='Erledigt / insgesamt';label.append(input,name,numbers);container.append(label);
+    }
+    $('selectionCount').textContent=`${selected.size} / ${collection.groups.length}`;
+  }
+  function renderList() {
+    const collection=c(),selected=new Set(collection.selected),done=new Set(collection.done);
+    const visible=manage?collection.entries:collection.entries.filter(e=>selected.has(e.groupId));
+    $('list').replaceChildren();
+    for(const entry of visible) {
+      const li=el('li',undefined,done.has(entry.id)?'done':''),label=el('label',undefined,'entry-label'),check=el('input');
+      check.type='checkbox';check.checked=done.has(entry.id);check.setAttribute('aria-label',`${D.entryLabel(state,state.mode,entry)} erledigt`);
+      check.onchange=()=>{const id=entry.id;commit(D.setDone(state,state.mode,id,check.checked),{keepResult:true});$('list').querySelector(`[data-entry="${CSS.escape(id)}"] input`)?.focus();};li.dataset.entry=entry.id;
+      const text=el('span',undefined,'entry-copy');text.append(el('span',D.entryLabel(state,state.mode,entry),'entry-title'));
+      if(!isExam())text.append(el('span',collection.groups.find(g=>g.id===entry.groupId).name,'entry-meta'));
+      label.append(check,text);li.append(label);
+      if(manage) {
+        const actions=el('div',undefined,'row-actions');const edit=button('Bearbeiten',()=>openEntry(entry));edit.dataset.action='edit';edit.setAttribute('aria-label',`${D.entryLabel(state,state.mode,entry)} bearbeiten`);
+        const remove=button('Löschen',()=>confirm(`${noun()} löschen?`,`${D.entryLabel(state,state.mode,entry)} wird mit dem zugehörigen Erledigt-Status entfernt.`,()=>{commit(D.removeEntry(state,state.mode,entry.id));notify('Eintrag gelöscht.');}),'btn danger');
+        remove.setAttribute('aria-label',`${D.entryLabel(state,state.mode,entry)} löschen`);actions.append(edit,remove);li.append(actions);
+      }
+      $('list').append(li);
+    }
+    if(!visible.length)$('list').append(el('li',manage?`Keine ${isExam()?'Prüfungen':'Aufgaben'} vorhanden. Füge deinen ersten Eintrag hinzu.`:!collection.selected.length?'Keine Themen oder Fächer ausgewählt.':`Keine ${isExam()?'Prüfungen':'Aufgaben'} in deiner Auswahl vorhanden.`,'empty'));
+    const n=visible.filter(e=>done.has(e.id)).length;
+    $('progress').textContent=`${n} / ${visible.length} erledigt`;$('totalCount').textContent=`${collection.entries.length} insgesamt`;
+    $('progressBar').max=visible.length||1;$('progressBar').value=n;
+    $('reset').disabled=!collection.done.length;
+  }
+  function render() {
+    $('modeTasks').setAttribute('aria-pressed',String(!isExam()));$('modeExams').setAttribute('aria-pressed',String(isExam()));
+    $('selectionTitle').textContent=isExam()?'Deine Prüfungsfächer':'Deine Themenfelder';$('manageGroups').textContent=isExam()?'Fächer verwalten':'Themen verwalten';
+    $('stageMode').textContent=isExam()?'DEINE NÄCHSTE PRÜFUNG':'DEINE NÄCHSTE AUFGABE';
+    $('listTitle').textContent=isExam()?'Deine Prüfungen':'Deine Aufgaben';$('addEntry').textContent=`+ ${noun()} hinzufügen`;
+    $('manageToggle').textContent=manage?'Bearbeitung beenden':'Liste bearbeiten';$('manageToggle').setAttribute('aria-pressed',String(manage));
+    $('listHint').textContent=manage?'Alle Einträge – unabhängig von deiner Würfelauswahl.':'Einträge aus deinen ausgewählten Themenfeldern oder Fächern.';
+    $('skipDone').checked=c().skipDone;
+    const count=D.getCandidates(state,state.mode).length;$('poolCount').textContent=`${count} ${count===1?'Eintrag':'Einträge'} im Würfeltopf`;
+    $('roll').disabled=count===0||rolling!==null;$('addEntry').disabled=c().groups.length===0;
+    $('selectAll').disabled=!c().groups.length;$('selectNone').disabled=!c().groups.length;
+    renderGroups();renderList();
+    if(current) {
+      const entry=c().entries.find(e=>e.id===current);
+      if(entry) {$('resultTitle').textContent=D.entryLabel(state,state.mode,entry);$('resultGroup').textContent=c().groups.find(g=>g.id===entry.groupId).name;$('markDone').hidden=c().done.includes(entry.id);}
+      else {current=null;resetResult();}
+    } else resetResult();
+  }
+  function roll() {
+    const mode=state.mode,target=D.choose(D.getCandidates(state,mode),last[mode]);if(!target||rolling!==null)return;
+    current=null;$('markDone').hidden=true;$('roll').disabled=true;$('die').classList.add('rolling');
+    $('resultGroup').textContent='Das Los entscheidet …';$('resultTitle').textContent='';$('resultHint').textContent='';
+    const finish=()=>{
+      cancelRoll();eyes(1+Math.floor(Math.random()*6));current=target.id;last[mode]=target.id;
+      render();$('resultHint').textContent=SAYINGS[Math.floor(Math.random()*SAYINGS.length)];
+    };
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){finish();return;}
+    const start=Date.now();rolling=setInterval(()=>{eyes(1+Math.floor(Math.random()*6));if(Date.now()-start>=1100)finish();},80);
+  }
+  function resetGroupForm() {$('groupForm').reset();$('groupId').value='';$('groupNameLabel').textContent=isExam()?'Neues Prüfungsfach':'Neues Themenfeld';$('saveGroup').textContent='Hinzufügen';$('cancelGroupEdit').hidden=true;$('groupError').hidden=true;}
+  function renderGroupManager() {
+    $('groupList').replaceChildren();$('groupsDialogTitle').textContent=isExam()?'Prüfungsfächer verwalten':'Themen verwalten';
+    for(const group of c().groups) {
+      const li=el('li'),text=el('span',group.name),actions=el('div',undefined,'row-actions');
+      const rename=button('Umbenennen',()=>{$('groupId').value=group.id;$('groupName').value=group.name;$('groupNameLabel').textContent=`${groupNoun()} umbenennen`;$('saveGroup').textContent='Speichern';$('cancelGroupEdit').hidden=false;$('groupError').hidden=true;$('groupName').focus();});rename.setAttribute('aria-label',`${group.name} umbenennen`);
+      const remove=button('Löschen',()=>confirm(`${groupNoun()} löschen?`,`${group.name} wird entfernt.`,()=>{try{commit(D.removeGroup(state,state.mode,group.id));resetGroupForm();renderGroupManager();}catch(e){errorAt('groupError',e);}}),'btn danger');
+      const used=c().entries.some(e=>e.groupId===group.id);remove.disabled=used;remove.title=used?'Enthält noch Einträge. Diese zuerst löschen oder einem anderen Bereich zuordnen.':'Leeren Bereich löschen';remove.setAttribute('aria-label',`${group.name} löschen`);
+      actions.append(rename,remove);li.append(text,actions);$('groupList').append(li);
+    }
+    if(!c().groups.length)$('groupList').append(el('li','Noch keine Fächer vorhanden.','empty'));
+  }
+  function openEntry(entry=null) {
+    const exam=isExam();$('entryForm').reset();$('entryError').hidden=true;$('entryId').value=entry?.id||'';
+    $('entryDialogTitle').textContent=`${noun()} ${entry?'bearbeiten':'hinzufügen'}`;$('entryGroupLabel').textContent=groupNoun();
+    $('taskFields').hidden=exam;$('examFields').hidden=!exam;$('entryTitle').required=!exam;$('entryTitle').disabled=exam;
+    for(const id of ['entryTerm','entryYear','entryNote'])$(id).disabled=!exam;
+    $('entryTerm').required=exam;$('entryYear').required=exam;
+    $('entryGroup').replaceChildren();for(const g of c().groups){const opt=el('option',g.name);opt.value=g.id;$('entryGroup').append(opt);}
+    $('entryGroup').value=entry?.groupId||c().selected[0]||c().groups[0]?.id||'';
+    if(entry) {if(exam){$('entryTerm').value=entry.term;$('entryYear').value=entry.year;$('entryNote').value=entry.note;}else $('entryTitle').value=entry.title;}
+    previewExam();showDialog('entryDialog');(exam?$('entryTerm'):$('entryTitle')).focus();
+  }
+  function previewExam() {
+    const group=c().groups.find(g=>g.id===$('entryGroup').value);
+    $('examPreview').textContent=`Vorschau: ${group?.name||'Fach'} – ${$('entryTerm').value||'Termin'} ${$('entryYear').value||'Jahr'}${$('entryNote').value?' · '+$('entryNote').value:''}`;
+  }
+  function id() {return 'id-'+crypto.randomUUID();}
+  function download(content,filename) {
+    const url=URL.createObjectURL(new Blob([content],{type:'application/json'})),a=el('a');a.href=url;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }
+  function exportData() {
+    try {const now=new Date();const date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');download(D.exportState(state),`tbw-wuerfel-${date}.json`);notify('Sicherungsdatei zum Herunterladen erstellt. Bewahre sie an einem sicheren Ort auf.');}
+    catch(e){notify(e.message);}
+  }
+  async function readImport(file) {
+    if(!file)return;
+    try {
+      if(file.size>5*1024*1024)throw Error('Die Datei ist zu groß (maximal 5 MB).');
+      const candidate=D.importState(await file.text());pendingImport=candidate;
+      const t=candidate.collections.tasks,x=candidate.collections.exams;
+      $('importSummary').textContent=`${file.name}: ${t.entries.length} Aufgaben in ${t.groups.length} Themenfeldern und ${x.entries.length} Prüfungen in ${x.groups.length} Fächern. ${t.done.length+x.done.length} Einträge erledigt.`;
+      $('importConsent').checked=false;$('confirmImport').disabled=true;$('importError').hidden=true;showDialog('importDialog');
+    }catch(e){pendingImport=null;notify(`Import abgelehnt: ${e.message} Dein aktueller Datenbestand bleibt unverändert.`);}
+    finally{$('importFile').value='';}
+  }
+  for(let i=0;i<9;i++)$('die').append(el('div',undefined,'pip'));eyes(5);
+  for(const mode of ['tasks','exams'])$(mode==='tasks'?'modeTasks':'modeExams').onclick=()=>{
+    if(state.mode===mode)return;const next=copy(state);next.mode=mode;manage=false;commit(next);
+  };
+  $('selectAll').onclick=()=>update(c=>{c.selected=c.groups.map(g=>g.id);});$('selectNone').onclick=()=>update(c=>{c.selected=[];});
+  $('skipDone').onchange=e=>update(c=>{c.skipDone=e.target.checked;});$('roll').onclick=roll;
+  $('markDone').onclick=()=>{if(current){commit(D.setDone(state,state.mode,current,true),{keepResult:true});notify('Erledigt! Ein Lernschritt mehr geschafft.');}};
+  $('manageToggle').onclick=()=>{manage=!manage;renderList();render();};$('addEntry').onclick=()=>openEntry();
+  $('manageGroups').onclick=()=>{resetGroupForm();renderGroupManager();showDialog('groupsDialog');};
+  $('cancelGroupEdit').onclick=resetGroupForm;
+  $('groupForm').onsubmit=e=>{e.preventDefault();try{commit(D.editGroup(state,state.mode,{id:$('groupId').value||id(),name:$('groupName').value}));resetGroupForm();renderGroupManager();$('groupName').focus();}catch(error){errorAt('groupError',error);}};
+  $('entryForm').onsubmit=e=>{
+    e.preventDefault();const entry={id:$('entryId').value||id(),groupId:$('entryGroup').value};
+    if(isExam())Object.assign(entry,{term:$('entryTerm').value,year:$('entryYear').value,note:$('entryNote').value});else entry.title=$('entryTitle').value;
+    try{commit(D.editEntry(state,state.mode,entry));closeDialog('entryDialog');notify(`${noun()} gespeichert.`);}catch(error){errorAt('entryError',error);}
+  };
+  for(const field of ['entryGroup','entryTerm','entryYear','entryNote'])$(field).addEventListener('input',previewExam);
+  $('reset').onclick=()=>confirm('Fortschritt zurücksetzen?',`Alle ${isExam()?'Prüfungen':'Übungsaufgaben'} dieses Modus werden wieder offen markiert – auch außerhalb der aktuellen Auswahl. Inhalte bleiben erhalten.`,()=>{update(c=>{c.done=[];});notify('Fortschritt dieses Modus zurückgesetzt.');});
+  $('confirmCancel').onclick=()=>closeDialog('confirmDialog');$('confirmOk').onclick=()=>{const action=confirmAction;confirmAction=null;closeDialog('confirmDialog');action?.();};
+  $('export').onclick=exportData;$('backupBeforeImport').onclick=exportData;$('import').onclick=()=>$('importFile').click();$('importFile').onchange=e=>readImport(e.target.files[0]);
+  $('importConsent').onchange=()=>$('confirmImport').disabled=!$('importConsent').checked;
+  $('confirmImport').onclick=()=>{if(!pendingImport||!$('importConsent').checked)return;try{last={tasks:null,exams:null};manage=false;commit(pendingImport,{replaceStorage:true});pendingImport=null;closeDialog('importDialog');notify('Sicherung übernommen. Inhalte, Auswahl und Lernfortschritt wurden wiederhergestellt.');}catch(error){errorAt('importError',error);}};
+  // A queued close event from an earlier dialog must not discard a newly opened import.
+  $('importDialog').addEventListener('close',()=>{if(!$('importDialog').open)pendingImport=null;});
+  for(const b of document.querySelectorAll('[data-close]'))b.onclick=()=>closeDialog(b.dataset.close);
+  window.addEventListener('beforeunload',()=>cancelRoll());
+  load();render();
+})();
+
+</script>
+</body>
+</html>
