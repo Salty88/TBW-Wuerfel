@@ -67,3 +67,55 @@ node tests/run.cjs
 ```
 
 Zusätzlich mit dem oben genannten lokalen Server `http://127.0.0.1:8765/tests/` öffnen und **Tests starten** anklicken. Diese Seite testet echte Browser-Abläufe einschließlich Formularen, Neuladen, Importbestätigung, ungültigem Import, Auswahländerung während eines Wurfs, Löschen und Speicherfehlern. Die Tests ersetzen den lokalen Zustand kurzzeitig durch Testdaten und stellen ihn anschließend wieder her. Nur auf einer separaten lokalen Vorschau-Adresse ausführen; keine weiteren Anwendungstabs gleichzeitig dort bearbeiten.
+
+## Gemeinsamen Lernstand bereitstellen
+
+Die Gruppenfunktion wird über den mitgelieferten Node.js-Server bereitgestellt.
+Der Server liefert die Webseite aus, meldet Mitglieder über GitHub an und
+speichert Aufgaben, Themen, Fächer, Prüfungen und den Erledigt-Status
+im privaten Daten-Repository. Der Würfelmodus und die Auswahl bleiben pro Browser.
+
+1. Ein separates **privates** GitHub-Repository mit initialisiertem Standardbranch anlegen.
+   Alle Mitglieder als Mitwirkende mit Schreibzugriff einladen. Der Standardbranch
+   muss Änderungen über die Contents-API erlauben.
+2. Eine GitHub-App registrieren. Als Callback die öffentliche HTTPS-Adresse mit
+   `/auth/callback` eintragen. Nur die Repository-Berechtigung **Contents: Read and write**
+   erteilen. Webhooks deaktivieren. Die App ausschließlich im privaten Daten-Repository
+   installieren.
+3. Den Server auf einem Node.js-Host (Node.js 22 oder neuer, eine Instanz) starten.
+   Die öffentliche Adresse muss HTTPS verwenden. Die folgenden Werte als
+   Umgebungsvariablen beim Hoster hinterlegen. Das Client-Secret als Geheimnis
+   im Hoster speichern.
+
+   | Variable | Wert |
+   | --- | --- |
+   | `TBW_ORIGIN` | Öffentliche Basisadresse ohne abschließenden Schrägstrich |
+   | `TBW_GITHUB_CLIENT_ID` | Client-ID der GitHub-App |
+   | `TBW_GITHUB_CLIENT_SECRET` | Client-Secret der GitHub-App |
+   | `TBW_DATA_REPO` | Privates Daten-Repository im Format `Besitzer/Repository` |
+   | `TBW_INITIALIZER` | GitHub-Anmeldename der Person, die den ersten Stand übernimmt |
+   | `PORT` | Port des Hosters, Standardwert 8080 |
+
+   Startbefehl: `node server.cjs`. Die Sitzung dauert bis zu acht Stunden
+   und endet auch bei einem Serverneustart.
+
+4. Die Gruppenleitung öffnet die bereitgestellte Webseite, meldet sich mit
+   GitHub an und klickt auf **Synchronisieren**. Beim ersten Mal bestätigt sie
+   **Gruppenstand anlegen**. Existiert der bisherige Lernstand bereits unter
+   derselben Webadresse, kann die App ihn direkt aus dem Browser übernehmen.
+   Für eine bisher heruntergeladene HTML-Datei oder eine andere Webadresse
+   ist einmalig der vorhandene Export und Import nötig, weil Browser den
+   Speicher je Adresse trennen.
+5. Danach können alle Mitglieder dieselbe Webseite öffnen, sich anmelden und
+   auf **Synchronisieren** klicken. Der Browser hält einen Entwurf samt letztem
+   Synchronisationsstand, damit Änderungen bei einer unterbrochenen Verbindung
+   erneut gesendet werden können. **Synchronisieren** aktualisiert auch den
+   gemeinsamen Erledigt-Status.
+
+Die von GitHub gespeicherte Versionskennung verhindert, dass ein gleichzeitiger
+Schreibvorgang fremde Änderungen überschreibt. Bei einem Konflikt kann erneut
+synchronisiert werden. Wenn sich parallele Änderungen fachlich widersprechen,
+etwa wenn ein Thema gelöscht und zugleich ein neuer Eintrag dafür angelegt
+wurde, muss die Zuordnung vor dem erneuten Synchronisieren korrigiert werden.
+
+Tests: `node tests/run.cjs` und `node --test tests/sync.test.cjs`.

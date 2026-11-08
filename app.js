@@ -21,6 +21,9 @@
   "Kein Backup-Plan, nur diese Aufgabe.",
   "Egal wie Scheiße du bist! Die IHK ist schlimmer",
 ];
+  const SYNC_STORE = 'tbw-group-draft-v1';
+  const S = globalThis.TBWSync;
+  let syncBase = null, syncDate = null, syncUser = null;
   let state, storageBlocked=false, manage=false, current=null, last={tasks:null,exams:null}, rolling=null, pendingImport=null, confirmAction=null;
   const copy=s=>JSON.parse(JSON.stringify(s));
   const c=()=>state.collections[state.mode];
@@ -34,11 +37,27 @@
   function storageError(text) {$('storageWarning').textContent=text;$('storageWarning').hidden=false;document.querySelector('.local-badge').textContent='! Nicht dauerhaft gespeichert';}
   function save() {
     if(storageBlocked)return;
-    try {localStorage.setItem(STORE,D.exportState(state));$('storageWarning').hidden=true;document.querySelector('.local-badge').textContent='● Lokal gespeichert';}
+    try {
+      if (syncBase) {
+        localStorage.setItem(SYNC_STORE, JSON.stringify({state, base:syncBase, date:syncDate}));
+        $('storageWarning').hidden = true;
+        renderSyncStatus();
+        return;
+      }
+      localStorage.setItem(STORE,D.exportState(state));$('storageWarning').hidden=true;document.querySelector('.local-badge').textContent='● Lokal gespeichert';}
     catch {storageError('Deine Änderungen sind nur für diese Sitzung verfügbar: Der Browser konnte sie nicht speichern. Bitte exportiere jetzt eine Sicherung.');}
   }
   function load() {
     try {
+      const groupDraft = localStorage.getItem(SYNC_STORE);
+      if (groupDraft !== null) {
+        const draft = JSON.parse(groupDraft);
+        state = D.validateState(draft.state);
+        S.apply(state, draft.base);
+        syncBase = draft.base;
+        syncDate = draft.date;
+        return;
+      }
       const raw=localStorage.getItem(STORE);
       if(raw!==null) {state=D.importState(raw);return;}
       let legacy=[];const old=localStorage.getItem(LEGACY);
@@ -195,7 +214,7 @@
     try{commit(D.editEntry(state,state.mode,entry));closeDialog('entryDialog');notify(`${noun()} gespeichert.`);}catch(error){errorAt('entryError',error);}
   };
   for(const field of ['entryGroup','entryTerm','entryYear','entryNote'])$(field).addEventListener('input',previewExam);
-  $('reset').onclick=()=>confirm('Fortschritt zurücksetzen?',`Alle ${isExam()?'Prüfungen':'Übungsaufgaben'} dieses Modus werden wieder offen markiert – auch außerhalb der aktuellen Auswahl. Inhalte bleiben erhalten.`,()=>{update(c=>{c.done=[];});notify('Fortschritt dieses Modus zurückgesetzt.');});
+  $('reset').onclick=()=>confirm('Fortschritt zurücksetzen?',`Alle ${isExam()?'Prüfungen':'Übungsaufgaben'} dieses Modus werden wieder offen markiert – auch außerhalb der aktuellen Auswahl.${syncBase?' Nach der Synchronisation gilt das für die ganze Lerngruppe.':''} Inhalte bleiben erhalten.`,()=>{update(c=>{c.done=[];});notify('Fortschritt dieses Modus zurückgesetzt.');});
   $('confirmCancel').onclick=()=>closeDialog('confirmDialog');$('confirmOk').onclick=()=>{const action=confirmAction;confirmAction=null;closeDialog('confirmDialog');action?.();};
   $('export').onclick=exportData;$('backupBeforeImport').onclick=exportData;$('import').onclick=()=>$('importFile').click();$('importFile').onchange=e=>readImport(e.target.files[0]);
   $('importConsent').onchange=()=>$('confirmImport').disabled=!$('importConsent').checked;
@@ -204,5 +223,124 @@
   $('importDialog').addEventListener('close',()=>{if(!$('importDialog').open)pendingImport=null;});
   for(const b of document.querySelectorAll('[data-close]'))b.onclick=()=>closeDialog(b.dataset.close);
   window.addEventListener('beforeunload',()=>cancelRoll());
-  load();render();
+  function renderSyncStatus() {
+    if (!syncBase) return;
+    const dirty = !S.equal(S.shared(state), syncBase);
+    document.querySelector('.local-badge').textContent = dirty ? 'Änderungen warten auf Sync' : 'Gruppenstand geladen';
+    if (syncUser) {
+      const date = syncDate ? new Date(syncDate).toLocaleString('de-DE') : 'noch nie';
+      $('syncStatus').textContent = `${syncUser} · Zuletzt synchronisiert: ${date}${dirty?' · Änderungen warten auf Sync.':''}`;
+    }
+  }
+
+  async function groupRequest(options) {
+    const response = await fetch('/api/group', options);
+    if (response.headers.get('X-TBW-Group-Sync') !== '1') return null;
+    const data = await response.json();
+    return {response, data};
+  }
+
+  function showSyncAccount(user, error) {
+    syncUser = user;
+    $('groupSync').hidden = false;
+    $('syncLogin').hidden = Boolean(user);
+    $('syncLogout').hidden = !user;
+    $('syncNow').hidden = !user;
+    $('syncStatus').textContent = error || (user ? `Angemeldet als ${user}.` : 'Melde dich mit GitHub an, um den Gruppenstand zu laden.');
+    renderSyncStatus();
+  }
+
+  function syncPrompt(message, options, versions = []) {
+    $('syncDetail').textContent = message;
+    $('syncVersions').replaceChildren(...versions.map(text=>el('p',text)));
+    return new Promise(resolve => {
+      $('syncActions').replaceChildren(...options.map(([label,value]) => button(label, () => {
+        $('syncActions').replaceChildren();
+        $('syncVersions').replaceChildren();
+        resolve(value);
+      })));
+      $('syncActions').querySelector('button')?.focus();
+    });
+  }
+
+  function describeVersion(version) {
+    if (!version) return 'Gelöscht';
+    const text = version.name || version.title || [version.term, version.year, version.note].filter(Boolean).join(' · ');
+    const status = Object.hasOwn(version,'done') ? (version.done ? ' · erledigt' : ' · offen') : '';
+    return text + status + (version.groupId ? ' · Zuordnung: ' + version.groupId : '');
+  }
+
+  async function synchronize() {
+    if ($('syncDialog').open) return;
+    $('syncDetail').textContent = 'Gruppenstand wird geladen …';
+    showDialog('syncDialog');
+    try {
+      const result = await groupRequest();
+      if (!result?.response.ok) throw new Error(result?.data.error || 'Synchronisation nicht erreichbar.');
+      const {version, value:remote, canInitialize} = result.data;
+      const local = S.shared(state);
+      let next = remote;
+      if (!remote) {
+        if (!canInitialize) throw new Error('Die Gruppenleitung muss zuerst einen Gruppenstand anlegen.');
+        const confirmed = await syncPrompt('Diesen Lernstand als gemeinsamen Ausgangspunkt speichern?', [
+          ['Abbrechen',false], ['Gruppenstand anlegen',true]
+        ]);
+        if (!confirmed) return;
+        next = local;
+      } else {
+        let base = syncBase;
+        if (!base && !S.equal(local,S.shared(D.createInitialState())) && !S.equal(local,remote)) {
+          const choice = await syncPrompt('Auf diesem Gerät gibt es einen eigenen Lernstand. Möchtest du ihn mit dem Gruppenstand zusammenführen?', [
+            ['Abbrechen',null], ['Gruppenstand laden','remote'], ['Zusammenführen','merge']
+          ]);
+          if (!choice) return;
+          if (choice === 'merge') base = S.shared(D.createInitialState());
+        }
+        if (base) {
+          const choices = Object.create(null);
+          for (const conflict of S.merge(base,local,remote).conflicts) {
+            const choice = await syncPrompt('Dieser Eintrag wurde auf beiden Seiten geändert. Welche Fassung soll die Gruppe übernehmen?', [
+              ['Abbrechen',null], ['Online-Fassung','remote'], ['Meine Fassung','local']
+            ], ['Online: '+describeVersion(conflict.remote), 'Auf diesem Gerät: '+describeVersion(conflict.local)]);
+            if (!choice) return;
+            choices[conflict.key] = choice;
+          }
+          next = S.merge(base,local,remote,choices).value;
+        }
+      }
+      let updated;
+      try { updated = S.apply(state,next); }
+      catch (error) { throw new Error(`Die Änderungen passen nicht zusammen. Prüfe doppelte Namen und die Zuordnung zu Themen oder Fächern. ${error.message}`); }
+      if (!S.equal(next,remote)) {
+        $('syncDetail').textContent = 'Gruppenstand wird gespeichert …';
+        const saved = await groupRequest({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version,value:next})});
+        if (!saved?.response.ok) throw new Error(saved?.data.error || 'Speichern fehlgeschlagen.');
+      }
+      syncBase = next;
+      syncDate = new Date().toISOString();
+      commit(updated,{replaceStorage:true});
+      notify('Gruppenstand synchronisiert.');
+    } catch (error) {
+      await syncPrompt(error.message,[['Schließen',null]]);
+    } finally {
+      closeDialog('syncDialog');
+    }
+  }
+
+  $('syncDialog').addEventListener('cancel',event=>event.preventDefault());
+  $('syncNow').onclick = synchronize;
+  $('syncLogout').onclick = async () => {
+    try {
+      const response = await fetch('/auth/logout',{method:'POST'});
+      if (!response.ok) throw new Error();
+      showSyncAccount(null);
+    } catch {notify('Abmelden fehlgeschlagen.');}
+  };
+  load();render();renderSyncStatus();
+  if (location.protocol !== 'file:') {
+    groupRequest().then(result => {
+      if (!result) return;
+      showSyncAccount(result.response.ok ? result.data.user : null,result.data.error);
+    }).catch(()=>{});
+  }
 })();

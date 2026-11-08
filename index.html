@@ -7,6 +7,7 @@
 <title>TBW · Lernwürfel</title>
 <link rel="stylesheet" href="styles.css">
 <script src="data.js" defer></script>
+<script src="sync-model.js" defer></script>
 <script src="app.js" defer></script>
 </head>
 <body>
@@ -39,6 +40,17 @@
     <ul id="list" class="entry-list"></ul>
     <button id="reset" class="text-btn reset-btn">Fortschritt dieses Modus zurücksetzen</button>
   </section>
+  <section class="backup card" id="groupSync" aria-labelledby="groupSyncTitle" hidden>
+    <div>
+      <h2 id="groupSyncTitle">Gemeinsamer Lernstand</h2>
+      <p id="syncStatus" class="hint" role="status">Melde dich mit GitHub an, um den Stand deiner Lerngruppe zu laden.</p>
+    </div>
+    <div class="actions">
+      <a class="btn" id="syncLogin" href="/auth/login">Mit GitHub anmelden</a>
+      <button class="btn" id="syncLogout" hidden>Abmelden</button>
+      <button class="btn primary" id="syncNow" hidden>Synchronisieren</button>
+    </div>
+  </section>
   <section class="backup card" aria-labelledby="backupTitle"><div><h2 id="backupTitle">Dein Lernstand. Zum Mitnehmen.</h2><p class="hint">Aufgaben, Prüfungen und Fortschritt als Datei sichern oder auf ein anderes Gerät übertragen.</p></div><div class="actions"><button id="export" class="btn">↓ Exportieren</button><button id="import" class="btn">↑ Importieren</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></section>
   <footer>Alles bleibt in diesem Browser. Exportiere regelmäßig eine Sicherung.<br>Kein Konto · Kein Server · Dein Lerntempo</footer>
 </main>
@@ -56,5 +68,11 @@
 <dialog id="confirmDialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle">Bitte bestätigen</h2><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="btn">Abbrechen</button><button id="confirmOk" class="btn danger">Bestätigen</button></div></dialog>
 <dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">Sicherung importieren</h2><p id="importSummary"></p><p class="notice">Der Import ersetzt alle Aufgaben, Prüfungen, Einstellungen und Fortschritte in diesem Browser. Exportiere vorher deine aktuellen Daten.</p><button id="backupBeforeImport" class="btn">↓ Aktuellen Stand zuerst exportieren</button><label class="import-consent"><input id="importConsent" type="checkbox"> Ich möchte den aktuellen Datenbestand durch diese Sicherung ersetzen.</label><p id="importError" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="btn" data-close="importDialog">Abbrechen</button><button id="confirmImport" class="btn primary" disabled>Sicherung übernehmen</button></div></dialog>
 <noscript><p>Bitte JavaScript aktivieren, um den Lernwürfel zu verwenden.</p></noscript>
+<dialog id="syncDialog" aria-labelledby="syncTitle">
+  <h2 id="syncTitle">Gemeinsamer Lernstand</h2>
+  <p id="syncDetail" class="hint" role="status"></p>
+  <div id="syncVersions" class="sync-versions"></div>
+  <div id="syncActions" class="dialog-actions"></div>
+</dialog>
 </body>
 </html>
