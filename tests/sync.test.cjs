@@ -41,55 +41,31 @@ test('preserves newly created exams and shares their completion', () => {
   assert.deepEqual(result.collections.exams.selected,['vwl']);
 });
 
-const {Readable} = require('node:stream');
-const {createServer} = require('../server.cjs');
 
-function call(server, method, url, headers = {}, data) {
-  return new Promise(resolve => {
-    const req = Object.assign(Readable.from(data ? [Buffer.from(JSON.stringify(data))] : []), {method,url,headers});
-    const response = {headers:{}, setHeader(key,value){this.headers[key]=value;},
-      appendHeader(key,value){(this.headers[key] ||= []).push(value);},
-      writeHead(status, extra){this.status=status;Object.assign(this.headers,extra);this.headersSent=true;},
-      end(body){resolve({status:this.status,headers:this.headers,body});}};
-    server.emit('request',req,response);
-  });
-}
+require('../github-sync.js');
 
-test('authenticates sessions, rejects cross-origin writes and protects versions', async () => {
-  const origin = 'https://example.test';
+test('reads UTF-8 state and sends a versioned write only to a private GitHub repository', async () => {
   const version = 'a'.repeat(40);
-  let visibility = true, writes = 0;
-  const server = createServer({TBW_ORIGIN:origin, TBW_GITHUB_CLIENT_ID:'id',
-    TBW_GITHUB_CLIENT_SECRET:'secret', TBW_DATA_REPO:'owner/data', TBW_INITIALIZER:'owner'},
-  async (url, options) => {
-    const json = Response.json;
-    if (url.endsWith('/access_token')) return json({access_token:'mock'});
-    if (url.endsWith('/user')) return json({login:'owner'});
-    if (url.endsWith('/repos/owner/data')) return json({private:visibility,permissions:{push:true}});
+  let privateRepo = true;
+  let writes = 0;
+  const request = async (url, options) => {
+    assert.equal(new URL(url).origin,'https://api.github.com');
+    if (url.endsWith('/user')) return Response.json({login:'mitglied'});
+    if (url.endsWith('/repos/gruppe/daten')) return Response.json({private:privateRepo,permissions:{push:true,admin:false}});
     if (options.method === 'PUT') {
       writes++;
-      assert.equal(JSON.parse(options.body).sha, version);
-      return json({content:{sha:'b'.repeat(40)}});
+      const body = JSON.parse(options.body);
+      assert.equal(body.sha,version);
+      assert.deepEqual(D.importState(Buffer.from(body.content,'base64').toString()),initial);
+      return Response.json({}, {status:409});
     }
-    return json({sha:version, encoding:'base64', content:Buffer.from(D.exportState(initial)).toString('base64')});
-  });
-  try {
-    assert.equal((await call(server,'GET','/api/group')).status,401);
-    const login = await call(server,'GET','/auth/login');
-    const nonce = new URL(login.headers.Location).searchParams.get('state');
-    const loginCookie = login.headers['Set-Cookie'][0].split(';')[0];
-    const session = await call(server,'GET','/auth/callback?code=x&state='+nonce,{cookie:loginCookie});
-    assert.equal(session.status,303);
-    const cookie = session.headers['Set-Cookie'].find(value=>value.startsWith('tbw_session=')).split(';')[0];
-    assert.equal(JSON.parse((await call(server,'GET','/api/group',{cookie})).body).version,version);
-    assert.equal((await call(server,'POST','/api/group',{cookie,origin:'https://foreign.test'})).status,403);
-    assert.equal((await call(server,'POST','/api/group',{cookie,origin},{version:'c'.repeat(40),value:S.shared(initial)})).status,409);
-    assert.equal(writes,0);
-    assert.equal((await call(server,'POST','/api/group',{cookie,origin},{version,value:S.shared(initial)})).status,200);
-    assert.equal(writes,1);
-    visibility = false;
-    assert.equal((await call(server,'GET','/api/group',{cookie})).status,403);
-  } finally {
-    server.emit('close');
-  }
+    return Response.json({type:'file',sha:version,encoding:'base64',content:Buffer.from(D.exportState(initial)).toString('base64')});
+  };
+  const connection = await globalThis.TBWGitHub.connect('gruppe/daten','github_pat_test',request);
+  assert.deepEqual(await connection.read(),{version,value:S.shared(initial),canInitialize:false});
+  await assert.rejects(connection.write(null,S.shared(initial)),/Gruppenleitung/);
+  await assert.rejects(connection.write(version,S.shared(initial)),/nicht gespeichert/);
+  privateRepo = false;
+  await assert.rejects(connection.write(version,S.shared(initial)),/privates Repository/);
+  assert.equal(writes,1);
 });

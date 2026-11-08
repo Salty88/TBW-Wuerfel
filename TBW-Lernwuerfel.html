@@ -179,11 +179,11 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important}}
 
 #groupSync { margin-bottom: 20px; }
-#syncLogin { display: inline-flex; align-items: center; text-decoration: none; }
 .sync-versions { display: grid; gap: 8px; }
 .sync-versions p { background: var(--soft); border-radius: 9px; padding: 10px; overflow-wrap: anywhere; }
 
 </style>
+
 
 
 
@@ -224,7 +224,7 @@
       <p id="syncStatus" class="hint" role="status">Melde dich mit GitHub an, um den Stand deiner Lerngruppe zu laden.</p>
     </div>
     <div class="actions">
-      <a class="btn" id="syncLogin" href="/auth/login">Mit GitHub anmelden</a>
+      <button class="btn" id="syncLogin">GitHub verbinden</button>
       <button class="btn" id="syncLogout" hidden>Abmelden</button>
       <button class="btn primary" id="syncNow" hidden>Synchronisieren</button>
     </div>
@@ -246,6 +246,16 @@
 <dialog id="confirmDialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle">Bitte bestätigen</h2><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="btn">Abbrechen</button><button id="confirmOk" class="btn danger">Bestätigen</button></div></dialog>
 <dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">Sicherung importieren</h2><p id="importSummary"></p><p class="notice">Der Import ersetzt alle Aufgaben, Prüfungen, Einstellungen und Fortschritte in diesem Browser. Exportiere vorher deine aktuellen Daten.</p><button id="backupBeforeImport" class="btn">↓ Aktuellen Stand zuerst exportieren</button><label class="import-consent"><input id="importConsent" type="checkbox"> Ich möchte den aktuellen Datenbestand durch diese Sicherung ersetzen.</label><p id="importError" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="btn" data-close="importDialog">Abbrechen</button><button id="confirmImport" class="btn primary" disabled>Sicherung übernehmen</button></div></dialog>
 <noscript><p>Bitte JavaScript aktivieren, um den Lernwürfel zu verwenden.</p></noscript>
+<dialog id="githubDialog" aria-labelledby="githubTitle">
+  <div class="section-head"><h2 id="githubTitle">GitHub verbinden</h2><button type="button" class="icon-btn" data-close="githubDialog" aria-label="Schließen">×</button></div>
+  <p class="hint">Der Token gilt nur für diese Sitzung. Er muss für das private Repository der Lerngruppe auf Contents lesen und schreiben dürfen.</p>
+  <form id="githubForm">
+    <label class="field">Privates Repository<input id="githubRepo" required placeholder="Organisation/Repository" autocapitalize="none" spellcheck="false"></label>
+    <label class="field">Fine-grained GitHub-Token<input id="githubToken" type="password" required autocomplete="off"></label>
+    <p id="githubError" class="form-error" role="alert" hidden></p>
+    <div class="dialog-actions"><button id="githubConnect" type="submit" class="btn primary">Verbinden</button></div>
+  </form>
+</dialog>
 <dialog id="syncDialog" aria-labelledby="syncTitle">
   <h2 id="syncTitle">Gemeinsamer Lernstand</h2>
   <p id="syncDetail" class="hint" role="status"></p>
@@ -460,6 +470,95 @@
 <script>
 (function () {
   'use strict';
+  const sha = /^[a-f0-9]{40}$/;
+  const filename = '/contents/lernstand.json';
+
+  function encode(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    for (let offset = 0; offset < bytes.length; offset += 16384) {
+      binary += String.fromCharCode(...bytes.subarray(offset, offset + 16384));
+    }
+    return btoa(binary);
+  }
+
+  async function connect(repo, token, request = fetch) {
+    if (!/^[a-z0-9][a-z0-9-]*\/[a-z0-9_.-]+$/i.test(repo) || !/^github_pat_[a-z0-9_]+$/i.test(token)) {
+      throw new Error('Gib das Repository im Format Organisation/Name und einen Fine-grained Token ein.');
+    }
+    const path = '/repos/' + repo;
+    async function github(endpoint, options = {}) {
+      const response = await request('https://api.github.com' + endpoint, {
+        ...options, credentials:'omit', redirect:'error', cache:'no-store',
+        signal:AbortSignal.timeout(20000),
+        headers:{Accept:'application/vnd.github+json', Authorization:'Bearer ' + token,
+          'Content-Type':'application/json', 'X-GitHub-Api-Version':'2022-11-28'}
+      });
+      if (response.status === 401) throw new Error('Der GitHub-Token ist ungültig oder abgelaufen. Verbinde GitHub erneut.');
+      return response;
+    }
+
+    async function access() {
+      const response = await github(path);
+      if (!response.ok) throw new Error('Prüfe den Repository-Namen und die Freigabe deines Tokens.');
+      const repository = await response.json();
+      if (!repository.private || !repository.permissions?.push) {
+        throw new Error('Der Gruppenstand benötigt ein privates Repository mit Schreibzugriff.');
+      }
+      return repository;
+    }
+
+    await access();
+    const account = await github('/user');
+    if (!account.ok) throw new Error('GitHub konnte dein Konto nicht prüfen.');
+    const {login} = await account.json();
+
+    async function read() {
+      const repository = await access();
+      const response = await github(path + filename);
+      const canInitialize = Boolean(repository.permissions.admin);
+      if (response.status === 404) return {version:null, value:null, canInitialize};
+      if (!response.ok) throw new Error('Der Gruppenstand konnte nicht geladen werden.');
+      const file = await response.json();
+      if (file.type !== 'file' || !sha.test(file.sha) || file.size > 5 * 1024 * 1024) {
+        throw new Error('Der Gruppenstand ist ungültig oder zu groß.');
+      }
+      let blob = file;
+      if (file.encoding !== 'base64') {
+        const result = await github(path + '/git/blobs/' + file.sha);
+        if (!result.ok) throw new Error('Der Gruppenstand konnte nicht gelesen werden.');
+        blob = await result.json();
+      }
+      const bytes = Uint8Array.from(atob(blob.content), char => char.charCodeAt(0));
+      const state = globalThis.TBW.importState(new TextDecoder('utf-8',{fatal:true}).decode(bytes));
+      return {version:file.sha, value:globalThis.TBWSync.shared(state), canInitialize};
+    }
+
+    async function write(version, value) {
+      const repository = await access();
+      if (version === null && !repository.permissions.admin) throw new Error('Nur die Gruppenleitung kann den ersten Stand anlegen.');
+      if (version !== null && !sha.test(version)) throw new Error('Die Version des Gruppenstands ist ungültig.');
+      const state = globalThis.TBWSync.apply(globalThis.TBW.createInitialState(),value);
+      const response = await github(path + filename,{method:'PUT',body:JSON.stringify({
+        message:'Lernstand der Gruppe synchronisieren', content:encode(globalThis.TBW.exportState(state)),
+        ...(version ? {sha:version} : {})
+      })});
+      if (response.status === 409 || response.status === 422) {
+        throw new Error('GitHub hat den Stand nicht gespeichert. Synchronisiere erneut oder prüfe die Regeln des Standardbranches.');
+      }
+      if (!response.ok) throw new Error('Speichern fehlgeschlagen. Prüfe, ob der Token Schreibzugriff auf Contents hat.');
+    }
+
+    return {repo:repo.toLowerCase(), login, read, write};
+  }
+
+  globalThis.TBWGitHub = {connect};
+})();
+
+</script>
+<script>
+(function () {
+  'use strict';
   const D=globalThis.TBW, $=id=>document.getElementById(id), STORE='tbw-wuerfel-v1', LEGACY='aufgaben-wuerfel-erledigt';
   const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
   const SAYINGS=[
@@ -483,7 +582,7 @@
 ];
   const SYNC_STORE = 'tbw-group-draft-v1';
   const S = globalThis.TBWSync;
-  let syncBase = null, syncDate = null, syncUser = null;
+  let syncBase = null, syncDate = null, syncRepo = null, syncConnection = null;
   let state, storageBlocked=false, manage=false, current=null, last={tasks:null,exams:null}, rolling=null, pendingImport=null, confirmAction=null;
   const copy=s=>JSON.parse(JSON.stringify(s));
   const c=()=>state.collections[state.mode];
@@ -499,7 +598,7 @@
     if(storageBlocked)return;
     try {
       if (syncBase) {
-        localStorage.setItem(SYNC_STORE, JSON.stringify({state, base:syncBase, date:syncDate}));
+        localStorage.setItem(SYNC_STORE, JSON.stringify({state, base:syncBase, date:syncDate, repo:syncRepo}));
         $('storageWarning').hidden = true;
         renderSyncStatus();
         return;
@@ -516,6 +615,7 @@
         S.apply(state, draft.base);
         syncBase = draft.base;
         syncDate = draft.date;
+        syncRepo = draft.repo || null;
         return;
       }
       const raw=localStorage.getItem(STORE);
@@ -687,26 +787,19 @@
     if (!syncBase) return;
     const dirty = !S.equal(S.shared(state), syncBase);
     document.querySelector('.local-badge').textContent = dirty ? 'Änderungen warten auf Sync' : 'Gruppenstand geladen';
-    if (syncUser) {
+    if (syncConnection) {
       const date = syncDate ? new Date(syncDate).toLocaleString('de-DE') : 'noch nie';
-      $('syncStatus').textContent = `${syncUser} · Zuletzt synchronisiert: ${date}${dirty?' · Änderungen warten auf Sync.':''}`;
+      $('syncStatus').textContent = `${syncConnection.login} · Zuletzt synchronisiert: ${date}${dirty?' · Änderungen warten auf Sync.':''}`;
     }
   }
 
-  async function groupRequest(options) {
-    const response = await fetch('/api/group', options);
-    if (response.headers.get('X-TBW-Group-Sync') !== '1') return null;
-    const data = await response.json();
-    return {response, data};
-  }
-
-  function showSyncAccount(user, error) {
-    syncUser = user;
+  function showSyncAccount(connection, error) {
+    syncConnection = connection;
     $('groupSync').hidden = false;
-    $('syncLogin').hidden = Boolean(user);
-    $('syncLogout').hidden = !user;
-    $('syncNow').hidden = !user;
-    $('syncStatus').textContent = error || (user ? `Angemeldet als ${user}.` : 'Melde dich mit GitHub an, um den Gruppenstand zu laden.');
+    $('syncLogin').hidden = Boolean(connection);
+    $('syncLogout').hidden = !connection;
+    $('syncNow').hidden = !connection;
+    $('syncStatus').textContent = error || (connection ? `Verbunden als ${connection.login}.` : 'Verbinde dein GitHub-Konto mit dem privaten Repository der Lerngruppe.');
     renderSyncStatus();
   }
 
@@ -731,13 +824,12 @@
   }
 
   async function synchronize() {
-    if ($('syncDialog').open) return;
+    if ($('syncDialog').open || !syncConnection) return;
     $('syncDetail').textContent = 'Gruppenstand wird geladen …';
     showDialog('syncDialog');
     try {
-      const result = await groupRequest();
-      if (!result?.response.ok) throw new Error(result?.data.error || 'Synchronisation nicht erreichbar.');
-      const {version, value:remote, canInitialize} = result.data;
+      const {version, value:remote, canInitialize} = await syncConnection.read();
+      if (!remote && syncBase) throw new Error('Der bisherige Gruppenstand fehlt auf GitHub. Prüfe das Repository mit der Gruppenleitung.');
       const local = S.shared(state);
       let next = remote;
       if (!remote) {
@@ -773,10 +865,10 @@
       catch (error) { throw new Error(`Die Änderungen passen nicht zusammen. Prüfe doppelte Namen und die Zuordnung zu Themen oder Fächern. ${error.message}`); }
       if (!S.equal(next,remote)) {
         $('syncDetail').textContent = 'Gruppenstand wird gespeichert …';
-        const saved = await groupRequest({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version,value:next})});
-        if (!saved?.response.ok) throw new Error(saved?.data.error || 'Speichern fehlgeschlagen.');
+        await syncConnection.write(version,next);
       }
       syncBase = next;
+      syncRepo = syncConnection.repo;
       syncDate = new Date().toISOString();
       commit(updated,{replaceStorage:true});
       notify('Gruppenstand synchronisiert.');
@@ -789,20 +881,34 @@
 
   $('syncDialog').addEventListener('cancel',event=>event.preventDefault());
   $('syncNow').onclick = synchronize;
-  $('syncLogout').onclick = async () => {
-    try {
-      const response = await fetch('/auth/logout',{method:'POST'});
-      if (!response.ok) throw new Error();
-      showSyncAccount(null);
-    } catch {notify('Abmelden fehlgeschlagen.');}
+  $('syncLogin').onclick = () => {
+    $('githubRepo').value = syncRepo || $('githubRepo').value;
+    $('githubError').hidden = true;
+    showDialog('githubDialog');
   };
-  load();render();renderSyncStatus();
-  if (location.protocol !== 'file:') {
-    groupRequest().then(result => {
-      if (!result) return;
-      showSyncAccount(result.response.ok ? result.data.user : null,result.data.error);
-    }).catch(()=>{});
-  }
+  $('githubDialog').addEventListener('close', () => { $('githubToken').value = ''; });
+  $('githubForm').onsubmit = async event => {
+    event.preventDefault();
+    const repo = $('githubRepo').value.trim().toLowerCase();
+    const token = $('githubToken').value.trim();
+    $('githubToken').value = '';
+    $('githubConnect').disabled = true;
+    $('githubError').hidden = true;
+    try {
+      if (syncRepo && repo !== syncRepo) throw new Error('Dieser Browser ist bereits mit ' + syncRepo + ' verbunden.');
+      const connection = await globalThis.TBWGitHub.connect(repo,token);
+      if (!$('githubDialog').open) return;
+      closeDialog('githubDialog');
+      showSyncAccount(connection);
+      await synchronize();
+    } catch (error) {
+      errorAt('githubError',error);
+    } finally {
+      $('githubConnect').disabled = false;
+    }
+  };
+  $('syncLogout').onclick = () => showSyncAccount(null);
+  load();render();showSyncAccount(null);
 })();
 
 </script>

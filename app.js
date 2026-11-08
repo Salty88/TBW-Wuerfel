@@ -23,7 +23,7 @@
 ];
   const SYNC_STORE = 'tbw-group-draft-v1';
   const S = globalThis.TBWSync;
-  let syncBase = null, syncDate = null, syncUser = null;
+  let syncBase = null, syncDate = null, syncRepo = null, syncConnection = null;
   let state, storageBlocked=false, manage=false, current=null, last={tasks:null,exams:null}, rolling=null, pendingImport=null, confirmAction=null;
   const copy=s=>JSON.parse(JSON.stringify(s));
   const c=()=>state.collections[state.mode];
@@ -39,7 +39,7 @@
     if(storageBlocked)return;
     try {
       if (syncBase) {
-        localStorage.setItem(SYNC_STORE, JSON.stringify({state, base:syncBase, date:syncDate}));
+        localStorage.setItem(SYNC_STORE, JSON.stringify({state, base:syncBase, date:syncDate, repo:syncRepo}));
         $('storageWarning').hidden = true;
         renderSyncStatus();
         return;
@@ -56,6 +56,7 @@
         S.apply(state, draft.base);
         syncBase = draft.base;
         syncDate = draft.date;
+        syncRepo = draft.repo || null;
         return;
       }
       const raw=localStorage.getItem(STORE);
@@ -227,26 +228,19 @@
     if (!syncBase) return;
     const dirty = !S.equal(S.shared(state), syncBase);
     document.querySelector('.local-badge').textContent = dirty ? 'Änderungen warten auf Sync' : 'Gruppenstand geladen';
-    if (syncUser) {
+    if (syncConnection) {
       const date = syncDate ? new Date(syncDate).toLocaleString('de-DE') : 'noch nie';
-      $('syncStatus').textContent = `${syncUser} · Zuletzt synchronisiert: ${date}${dirty?' · Änderungen warten auf Sync.':''}`;
+      $('syncStatus').textContent = `${syncConnection.login} · Zuletzt synchronisiert: ${date}${dirty?' · Änderungen warten auf Sync.':''}`;
     }
   }
 
-  async function groupRequest(options) {
-    const response = await fetch('/api/group', options);
-    if (response.headers.get('X-TBW-Group-Sync') !== '1') return null;
-    const data = await response.json();
-    return {response, data};
-  }
-
-  function showSyncAccount(user, error) {
-    syncUser = user;
+  function showSyncAccount(connection, error) {
+    syncConnection = connection;
     $('groupSync').hidden = false;
-    $('syncLogin').hidden = Boolean(user);
-    $('syncLogout').hidden = !user;
-    $('syncNow').hidden = !user;
-    $('syncStatus').textContent = error || (user ? `Angemeldet als ${user}.` : 'Melde dich mit GitHub an, um den Gruppenstand zu laden.');
+    $('syncLogin').hidden = Boolean(connection);
+    $('syncLogout').hidden = !connection;
+    $('syncNow').hidden = !connection;
+    $('syncStatus').textContent = error || (connection ? `Verbunden als ${connection.login}.` : 'Verbinde dein GitHub-Konto mit dem privaten Repository der Lerngruppe.');
     renderSyncStatus();
   }
 
@@ -271,13 +265,12 @@
   }
 
   async function synchronize() {
-    if ($('syncDialog').open) return;
+    if ($('syncDialog').open || !syncConnection) return;
     $('syncDetail').textContent = 'Gruppenstand wird geladen …';
     showDialog('syncDialog');
     try {
-      const result = await groupRequest();
-      if (!result?.response.ok) throw new Error(result?.data.error || 'Synchronisation nicht erreichbar.');
-      const {version, value:remote, canInitialize} = result.data;
+      const {version, value:remote, canInitialize} = await syncConnection.read();
+      if (!remote && syncBase) throw new Error('Der bisherige Gruppenstand fehlt auf GitHub. Prüfe das Repository mit der Gruppenleitung.');
       const local = S.shared(state);
       let next = remote;
       if (!remote) {
@@ -313,10 +306,10 @@
       catch (error) { throw new Error(`Die Änderungen passen nicht zusammen. Prüfe doppelte Namen und die Zuordnung zu Themen oder Fächern. ${error.message}`); }
       if (!S.equal(next,remote)) {
         $('syncDetail').textContent = 'Gruppenstand wird gespeichert …';
-        const saved = await groupRequest({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version,value:next})});
-        if (!saved?.response.ok) throw new Error(saved?.data.error || 'Speichern fehlgeschlagen.');
+        await syncConnection.write(version,next);
       }
       syncBase = next;
+      syncRepo = syncConnection.repo;
       syncDate = new Date().toISOString();
       commit(updated,{replaceStorage:true});
       notify('Gruppenstand synchronisiert.');
@@ -329,18 +322,32 @@
 
   $('syncDialog').addEventListener('cancel',event=>event.preventDefault());
   $('syncNow').onclick = synchronize;
-  $('syncLogout').onclick = async () => {
-    try {
-      const response = await fetch('/auth/logout',{method:'POST'});
-      if (!response.ok) throw new Error();
-      showSyncAccount(null);
-    } catch {notify('Abmelden fehlgeschlagen.');}
+  $('syncLogin').onclick = () => {
+    $('githubRepo').value = syncRepo || $('githubRepo').value;
+    $('githubError').hidden = true;
+    showDialog('githubDialog');
   };
-  load();render();renderSyncStatus();
-  if (location.protocol !== 'file:') {
-    groupRequest().then(result => {
-      if (!result) return;
-      showSyncAccount(result.response.ok ? result.data.user : null,result.data.error);
-    }).catch(()=>{});
-  }
+  $('githubDialog').addEventListener('close', () => { $('githubToken').value = ''; });
+  $('githubForm').onsubmit = async event => {
+    event.preventDefault();
+    const repo = $('githubRepo').value.trim().toLowerCase();
+    const token = $('githubToken').value.trim();
+    $('githubToken').value = '';
+    $('githubConnect').disabled = true;
+    $('githubError').hidden = true;
+    try {
+      if (syncRepo && repo !== syncRepo) throw new Error('Dieser Browser ist bereits mit ' + syncRepo + ' verbunden.');
+      const connection = await globalThis.TBWGitHub.connect(repo,token);
+      if (!$('githubDialog').open) return;
+      closeDialog('githubDialog');
+      showSyncAccount(connection);
+      await synchronize();
+    } catch (error) {
+      errorAt('githubError',error);
+    } finally {
+      $('githubConnect').disabled = false;
+    }
+  };
+  $('syncLogout').onclick = () => showSyncAccount(null);
+  load();render();showSyncAccount(null);
 })();

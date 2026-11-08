@@ -171,6 +171,5 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important}}
 
 #groupSync { margin-bottom: 20px; }
-#syncLogin { display: inline-flex; align-items: center; text-decoration: none; }
 .sync-versions { display: grid; gap: 8px; }
 .sync-versions p { background: var(--soft); border-radius: 9px; padding: 10px; overflow-wrap: anywhere; }

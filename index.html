@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="styles.css">
 <script src="data.js" defer></script>
 <script src="sync-model.js" defer></script>
+<script src="github-sync.js" defer></script>
 <script src="app.js" defer></script>
 </head>
 <body>
@@ -46,7 +47,7 @@
       <p id="syncStatus" class="hint" role="status">Melde dich mit GitHub an, um den Stand deiner Lerngruppe zu laden.</p>
     </div>
     <div class="actions">
-      <a class="btn" id="syncLogin" href="/auth/login">Mit GitHub anmelden</a>
+      <button class="btn" id="syncLogin">GitHub verbinden</button>
       <button class="btn" id="syncLogout" hidden>Abmelden</button>
       <button class="btn primary" id="syncNow" hidden>Synchronisieren</button>
     </div>
@@ -68,6 +69,16 @@
 <dialog id="confirmDialog" aria-labelledby="confirmTitle"><h2 id="confirmTitle">Bitte bestätigen</h2><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="btn">Abbrechen</button><button id="confirmOk" class="btn danger">Bestätigen</button></div></dialog>
 <dialog id="importDialog" aria-labelledby="importTitle"><h2 id="importTitle">Sicherung importieren</h2><p id="importSummary"></p><p class="notice">Der Import ersetzt alle Aufgaben, Prüfungen, Einstellungen und Fortschritte in diesem Browser. Exportiere vorher deine aktuellen Daten.</p><button id="backupBeforeImport" class="btn">↓ Aktuellen Stand zuerst exportieren</button><label class="import-consent"><input id="importConsent" type="checkbox"> Ich möchte den aktuellen Datenbestand durch diese Sicherung ersetzen.</label><p id="importError" class="form-error" role="alert" hidden></p><div class="dialog-actions"><button class="btn" data-close="importDialog">Abbrechen</button><button id="confirmImport" class="btn primary" disabled>Sicherung übernehmen</button></div></dialog>
 <noscript><p>Bitte JavaScript aktivieren, um den Lernwürfel zu verwenden.</p></noscript>
+<dialog id="githubDialog" aria-labelledby="githubTitle">
+  <div class="section-head"><h2 id="githubTitle">GitHub verbinden</h2><button type="button" class="icon-btn" data-close="githubDialog" aria-label="Schließen">×</button></div>
+  <p class="hint">Der Token gilt nur für diese Sitzung. Er muss für das private Repository der Lerngruppe auf Contents lesen und schreiben dürfen.</p>
+  <form id="githubForm">
+    <label class="field">Privates Repository<input id="githubRepo" required placeholder="Organisation/Repository" autocapitalize="none" spellcheck="false"></label>
+    <label class="field">Fine-grained GitHub-Token<input id="githubToken" type="password" required autocomplete="off"></label>
+    <p id="githubError" class="form-error" role="alert" hidden></p>
+    <div class="dialog-actions"><button id="githubConnect" type="submit" class="btn primary">Verbinden</button></div>
+  </form>
+</dialog>
 <dialog id="syncDialog" aria-labelledby="syncTitle">
   <h2 id="syncTitle">Gemeinsamer Lernstand</h2>
   <p id="syncDetail" class="hint" role="status"></p>

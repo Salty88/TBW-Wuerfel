@@ -1,6 +1,6 @@
 # TBW · Dein Lernwürfel
 
-Ein browserbasierter Lernwürfel für den Technischen Betriebswirt. Wähle Themen oder Prüfungsfächer und lass die nächste Aufgabe beziehungsweise Prüfung auslosen. Ohne Konto, Server oder externe Bibliotheken.
+Ein browserbasierter Lernwürfel für den Technischen Betriebswirt. Wähle Themen oder Prüfungsfächer und lass die nächste Aufgabe beziehungsweise Prüfung auslosen. Der Würfel funktioniert lokal. Die Gruppensynchronisation verwendet GitHub.
 
 ## Starten
 
@@ -68,54 +68,39 @@ node tests/run.cjs
 
 Zusätzlich mit dem oben genannten lokalen Server `http://127.0.0.1:8765/tests/` öffnen und **Tests starten** anklicken. Diese Seite testet echte Browser-Abläufe einschließlich Formularen, Neuladen, Importbestätigung, ungültigem Import, Auswahländerung während eines Wurfs, Löschen und Speicherfehlern. Die Tests ersetzen den lokalen Zustand kurzzeitig durch Testdaten und stellen ihn anschließend wieder her. Nur auf einer separaten lokalen Vorschau-Adresse ausführen; keine weiteren Anwendungstabs gleichzeitig dort bearbeiten.
 
-## Gemeinsamen Lernstand bereitstellen
+## Gemeinsamen Lernstand mit GitHub nutzen
 
-Die Gruppenfunktion wird über den mitgelieferten Node.js-Server bereitgestellt.
-Der Server liefert die Webseite aus, meldet Mitglieder über GitHub an und
-speichert Aufgaben, Themen, Fächer, Prüfungen und den Erledigt-Status
-im privaten Daten-Repository. Der Würfelmodus und die Auswahl bleiben pro Browser.
+Der Würfel kann über GitHub Pages oder als heruntergeladene HTML-Datei
+geöffnet werden. Für die Gruppensynchronisation braucht er eine Verbindung
+zu GitHub. Aufgaben, Themen, Fächer, Prüfungen und Erledigt-Markierungen
+werden gemeinsam gespeichert. Die Würfelauswahl bleibt pro Browser.
 
-1. Ein separates **privates** GitHub-Repository mit initialisiertem Standardbranch anlegen.
-   Alle Mitglieder als Mitwirkende mit Schreibzugriff einladen. Der Standardbranch
-   muss Änderungen über die Contents-API erlauben.
-2. Eine GitHub-App registrieren. Als Callback die öffentliche HTTPS-Adresse mit
-   `/auth/callback` eintragen. Nur die Repository-Berechtigung **Contents: Read and write**
-   erteilen. Webhooks deaktivieren. Die App ausschließlich im privaten Daten-Repository
-   installieren.
-3. Den Server auf einem Node.js-Host (Node.js 22 oder neuer, eine Instanz) starten.
-   Die öffentliche Adresse muss HTTPS verwenden. Die folgenden Werte als
-   Umgebungsvariablen beim Hoster hinterlegen. Das Client-Secret als Geheimnis
-   im Hoster speichern.
+1. Ein privates Repository in einer **GitHub-Organisation** erstellen und den
+   Standardbranch mit einer README initialisieren. Die Lernenden als
+   Organisationsmitglieder aufnehmen und ihnen Schreibzugriff nur auf das
+   Daten-Repository geben. GitHub unterstützt Fine-grained Tokens für
+   reine Repository-Mitwirkende außerhalb der Organisation nicht.
+2. Jedes Mitglied erstellt in seinen GitHub-Einstellungen einen **Fine-grained
+   personal access token**. Als Resource Owner die Organisation auswählen,
+   den Zugriff auf das private Daten-Repository beschränken und für
+   **Contents** die Berechtigung **Read and write** setzen. Die Organisation
+   muss den Token gegebenenfalls genehmigen. Der Token bleibt beim Würfeln
+   nur im Arbeitsspeicher des Browsers.
+3. Den Würfel öffnen, **GitHub verbinden** wählen und den Namen des
+   privaten Repositories sowie den eigenen Token eingeben. Die Gruppenleitung
+   benötigt Adminrechte im Daten-Repository und bestätigt einmalig
+   **Gruppenstand anlegen**. Der ausgewählte Startstand wird dann direkt
+   gespeichert.
+4. Nach Änderungen **Synchronisieren** wählen. Änderungen an verschiedenen
+   Einträgen werden zusammengeführt. Bei widersprüchlichen Änderungen am
+   selben Eintrag fragt der Würfel nach der gewünschten Fassung. Wenn ein
+   anderer Schreibvorgang dazwischenkommt, erneut synchronisieren.
 
-   | Variable | Wert |
-   | --- | --- |
-   | `TBW_ORIGIN` | Öffentliche Basisadresse ohne abschließenden Schrägstrich |
-   | `TBW_GITHUB_CLIENT_ID` | Client-ID der GitHub-App |
-   | `TBW_GITHUB_CLIENT_SECRET` | Client-Secret der GitHub-App |
-   | `TBW_DATA_REPO` | Privates Daten-Repository im Format `Besitzer/Repository` |
-   | `TBW_INITIALIZER` | GitHub-Anmeldename der Person, die den ersten Stand übernimmt |
-   | `PORT` | Port des Hosters, Standardwert 8080 |
-
-   Startbefehl: `node server.cjs`. Die Sitzung dauert bis zu acht Stunden
-   und endet auch bei einem Serverneustart.
-
-4. Die Gruppenleitung öffnet die bereitgestellte Webseite, meldet sich mit
-   GitHub an und klickt auf **Synchronisieren**. Beim ersten Mal bestätigt sie
-   **Gruppenstand anlegen**. Existiert der bisherige Lernstand bereits unter
-   derselben Webadresse, kann die App ihn direkt aus dem Browser übernehmen.
-   Für eine bisher heruntergeladene HTML-Datei oder eine andere Webadresse
-   ist einmalig der vorhandene Export und Import nötig, weil Browser den
-   Speicher je Adresse trennen.
-5. Danach können alle Mitglieder dieselbe Webseite öffnen, sich anmelden und
-   auf **Synchronisieren** klicken. Der Browser hält einen Entwurf samt letztem
-   Synchronisationsstand, damit Änderungen bei einer unterbrochenen Verbindung
-   erneut gesendet werden können. **Synchronisieren** aktualisiert auch den
-   gemeinsamen Erledigt-Status.
-
-Die von GitHub gespeicherte Versionskennung verhindert, dass ein gleichzeitiger
-Schreibvorgang fremde Änderungen überschreibt. Bei einem Konflikt kann erneut
-synchronisiert werden. Wenn sich parallele Änderungen fachlich widersprechen,
-etwa wenn ein Thema gelöscht und zugleich ein neuer Eintrag dafür angelegt
-wurde, muss die Zuordnung vor dem erneuten Synchronisieren korrigiert werden.
+Für GitHub Pages im öffentlichen Code-Repository unter **Settings → Pages**
+den Standardbranch und den Ordner **/ (root)** auswählen. Für die
+heruntergeladene Ausgabe im Repository **TBW-Lernwuerfel.html** öffnen und
+herunterladen. Soll ein vorhandener Lernstand von einer anderen Adresse
+übernommen werden, braucht es einmalig den eingebauten Export und Import.
+Browser trennen den lokalen Speicher nach Adresse.
 
 Tests: `node tests/run.cjs` und `node --test tests/sync.test.cjs`.
